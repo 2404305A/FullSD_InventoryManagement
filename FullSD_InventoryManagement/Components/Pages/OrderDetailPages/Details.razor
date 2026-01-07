@@ -1,0 +1,58 @@
+﻿@page "/orderdetails/details"
+@using Microsoft.EntityFrameworkCore
+@using FullSD_InventoryManagement.Domain
+@inject IDbContextFactory<FullSD_InventoryManagement.Data.FullSD_InventoryManagementContext> DbFactory
+@inject NavigationManager NavigationManager
+
+<PageTitle>Details</PageTitle>
+
+<h1>Details</h1>
+
+<div>
+    <h2>OrderDetail</h2>
+    <hr />
+    @if (orderdetail is null)
+    {
+        <p><em>Loading...</em></p>
+    }
+    else {
+        <dl class="row">
+            <dt class="col-sm-2">OrderID</dt>
+            <dd class="col-sm-10">@orderdetail.OrderID</dd>
+            <dt class="col-sm-2">ItemID</dt>
+            <dd class="col-sm-10">@orderdetail.ItemID</dd>
+            <dt class="col-sm-2">Quantity</dt>
+            <dd class="col-sm-10">@orderdetail.Quantity</dd>
+            <dt class="col-sm-2">DateCreated</dt>
+            <dd class="col-sm-10">@orderdetail.DateCreated</dd>
+            <dt class="col-sm-2">DateUpdated</dt>
+            <dd class="col-sm-10">@orderdetail.DateUpdated</dd>
+            <dt class="col-sm-2">CreatedBy</dt>
+            <dd class="col-sm-10">@orderdetail.CreatedBy</dd>
+            <dt class="col-sm-2">UpdatedBy</dt>
+            <dd class="col-sm-10">@orderdetail.UpdatedBy</dd>
+        </dl>
+        <div>
+            <a href="@($"/orderdetails/edit?id={orderdetail.Id}")">Edit</a> |
+            <a href="@($"/orderdetails")">Back to List</a>
+        </div>
+    }
+</div>
+
+@code {
+    private OrderDetail? orderdetail;
+
+    [SupplyParameterFromQuery]
+    private int Id { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = DbFactory.CreateDbContext();
+        orderdetail = await context.OrderDetail.FirstOrDefaultAsync(m => m.Id == Id);
+
+        if (orderdetail is null)
+        {
+            NavigationManager.NavigateTo("notfound");
+        }
+    }
+}

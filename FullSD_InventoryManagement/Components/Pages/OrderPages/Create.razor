@@ -1,0 +1,79 @@
+﻿@page "/orders/create"
+@using Microsoft.EntityFrameworkCore
+@using FullSD_InventoryManagement.Domain
+@inject IDbContextFactory<FullSD_InventoryManagement.Data.FullSD_InventoryManagementContext> DbFactory
+@inject NavigationManager NavigationManager
+
+<PageTitle>Create</PageTitle>
+
+<h1>Create</h1>
+
+<h2>Order</h2>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <EditForm method="post" Model="Order" OnValidSubmit="AddOrder" FormName="create" Enhance>
+            <DataAnnotationsValidator />
+            <ValidationSummary class="text-danger" role="alert"/>
+            <div class="mb-3">
+                <label for="movement" class="form-label">Movement:</label>
+                <InputSelect id="movement" @bind-Value="Order.Movement" class="form-control">
+                    @foreach (var movement in Enum.GetValues(typeof(MovementType)))
+                    {
+                        <option value="@movement">@movement</option>
+                    }
+                </InputSelect>
+                <ValidationMessage For="() => Order.Movement" class="text-danger" />
+            </div>
+            <div class="mb-3">
+                <label for="location" class="form-label">Location:</label> 
+                <InputText id="location" @bind-Value="Order.Location" class="form-control" /> 
+                <ValidationMessage For="() => Order.Location" class="text-danger" /> 
+            </div>        
+            <div class="mb-3">
+                <label for="branchid" class="form-label">BranchID:</label> 
+                <InputNumber id="branchid" @bind-Value="Order.BranchID" class="form-control" /> 
+                <ValidationMessage For="() => Order.BranchID" class="text-danger" /> 
+            </div>        
+            <div class="mb-3">
+                <label for="datecreated" class="form-label">DateCreated:</label> 
+                <InputDate id="datecreated" @bind-Value="Order.DateCreated" class="form-control" /> 
+                <ValidationMessage For="() => Order.DateCreated" class="text-danger" /> 
+            </div>        
+            <div class="mb-3">
+                <label for="dateupdated" class="form-label">DateUpdated:</label> 
+                <InputDate id="dateupdated" @bind-Value="Order.DateUpdated" class="form-control" /> 
+                <ValidationMessage For="() => Order.DateUpdated" class="text-danger" /> 
+            </div>        
+            <div class="mb-3">
+                <label for="createdby" class="form-label">CreatedBy:</label> 
+                <InputText id="createdby" @bind-Value="Order.CreatedBy" class="form-control" /> 
+                <ValidationMessage For="() => Order.CreatedBy" class="text-danger" /> 
+            </div>        
+            <div class="mb-3">
+                <label for="updatedby" class="form-label">UpdatedBy:</label> 
+                <InputText id="updatedby" @bind-Value="Order.UpdatedBy" class="form-control" /> 
+                <ValidationMessage For="() => Order.UpdatedBy" class="text-danger" /> 
+            </div>        
+            <button type="submit" class="btn btn-primary">Create</button>
+        </EditForm>
+    </div>
+</div>
+
+<div>
+    <a href="/orders">Back to List</a>
+</div>
+
+@code {
+    [SupplyParameterFromForm]
+    private Order Order { get; set; } = new();
+
+    // To protect from overposting attacks, see https://learn.microsoft.com/aspnet/core/blazor/forms/#mitigate-overposting-attacks.
+    private async Task AddOrder()
+    {
+        using var context = DbFactory.CreateDbContext();
+        context.Order.Add(Order);
+        await context.SaveChangesAsync();
+        NavigationManager.NavigateTo("/orders");
+    }
+}

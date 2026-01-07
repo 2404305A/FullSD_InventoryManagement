@@ -1,0 +1,42 @@
+﻿@page "/orderdetails"
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Components.QuickGrid
+@using FullSD_InventoryManagement.Domain
+@using FullSD_InventoryManagement.Data
+@implements IAsyncDisposable
+@inject IDbContextFactory<FullSD_InventoryManagement.Data.FullSD_InventoryManagementContext> DbFactory
+
+<PageTitle>Index</PageTitle>
+
+<h1>Index</h1>
+
+<p>
+    <a href="orderdetails/create">Create New</a>
+</p>
+
+<QuickGrid Class="table" Items="context.OrderDetail">
+    <PropertyColumn Property="orderdetail => orderdetail.OrderID" />
+    <PropertyColumn Property="orderdetail => orderdetail.ItemID" />
+    <PropertyColumn Property="orderdetail => orderdetail.Quantity" />
+    <PropertyColumn Property="orderdetail => orderdetail.DateCreated" />
+    <PropertyColumn Property="orderdetail => orderdetail.DateUpdated" />
+    <PropertyColumn Property="orderdetail => orderdetail.CreatedBy" />
+    <PropertyColumn Property="orderdetail => orderdetail.UpdatedBy" />
+
+    <TemplateColumn Context="orderdetail">
+        <a href="@($"orderdetails/edit?id={orderdetail.Id}")">Edit</a> |
+        <a href="@($"orderdetails/details?id={orderdetail.Id}")">Details</a> |
+        <a href="@($"orderdetails/delete?id={orderdetail.Id}")">Delete</a>
+    </TemplateColumn>
+</QuickGrid>
+
+@code {
+    private FullSD_InventoryManagementContext context = default!;
+
+    protected override void OnInitialized()
+    {
+        context = DbFactory.CreateDbContext();
+    }
+
+    public async ValueTask DisposeAsync() => await context.DisposeAsync();
+}
