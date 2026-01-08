@@ -1,20 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using FullSD_InventoryManagement.Configurations.Entities;
+using FullSD_InventoryManagement.Data;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-using FullSD_InventoryManagement.Domain;
-using FullSD_InventoryManagement.Configurations.Entities;
 
 namespace FullSD_InventoryManagement.Data
 {
-    public class FullSD_InventoryManagementContext : DbContext
+    public class FullSD_InventoryManagementContext(DbContextOptions<FullSD_InventoryManagementContext> options) : IdentityDbContext<FullSD_InventoryManagementUser>(options)
     {
-        public FullSD_InventoryManagementContext (DbContextOptions<FullSD_InventoryManagementContext> options)
-            : base(options)
-        {
-        }
-
         public DbSet<FullSD_InventoryManagement.Domain.Item> Item { get; set; } = default!;
         public DbSet<FullSD_InventoryManagement.Domain.Branch> Branch { get; set; } = default!;
         public DbSet<FullSD_InventoryManagement.Domain.User> User { get; set; } = default!;
@@ -28,6 +20,9 @@ namespace FullSD_InventoryManagement.Data
             builder.ApplyConfiguration(new ItemSeed());
             builder.ApplyConfiguration(new OrderDetailSeed());
             builder.ApplyConfiguration(new OrderSeed());
+            builder.ApplyConfiguration(new RoleSeed());
+            builder.ApplyConfiguration(new UserRoleSeed());
+            builder.ApplyConfiguration(new UserSeed());
         }
     }
 }

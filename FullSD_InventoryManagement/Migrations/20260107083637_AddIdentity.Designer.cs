@@ -4,6 +4,7 @@ using FullSD_InventoryManagement.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FullSD_InventoryManagement.Migrations
 {
     [DbContext(typeof(FullSD_InventoryManagementContext))]
-    partial class FullSD_InventoryManagementContextModelSnapshot : ModelSnapshot
+    [Migration("20260107083637_AddIdentity")]
+    partial class AddIdentity
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -40,12 +43,6 @@ namespace FullSD_InventoryManagement.Migrations
 
                     b.Property<bool>("EmailConfirmed")
                         .HasColumnType("bit");
-
-                    b.Property<string>("FirstName")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("LastName")
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("LockoutEnabled")
                         .HasColumnType("bit");
@@ -91,26 +88,6 @@ namespace FullSD_InventoryManagement.Migrations
                         .HasFilter("[NormalizedUserName] IS NOT NULL");
 
                     b.ToTable("AspNetUsers", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            Id = "d40252e1-7e47-4998-a6f2-c872657c5223",
-                            AccessFailedCount = 0,
-                            ConcurrencyStamp = "9943aee5-bdda-406c-9216-49e1cbb05c1b",
-                            Email = "admin@localhost.com",
-                            EmailConfirmed = true,
-                            FirstName = "Admin",
-                            LastName = "User",
-                            LockoutEnabled = false,
-                            NormalizedEmail = "ADMIN@LOCALHOST.COM",
-                            NormalizedUserName = "ADMIN@LOCALHOST.COM",
-                            PasswordHash = "AQAAAAIAAYagAAAAEHER01QZUdWz+2kPLS+gS87OVdGPBeWCHh8e4sF1asQBJMG/ZM9nTEyoMu4DgETDyg==",
-                            PhoneNumberConfirmed = false,
-                            SecurityStamp = "0c23e18c-6f02-4ed1-ac17-15c40c1a810f",
-                            TwoFactorEnabled = false,
-                            UserName = "admin@localhost.com"
-                        });
                 });
 
             modelBuilder.Entity("FullSD_InventoryManagement.Domain.Branch", b =>
@@ -145,8 +122,8 @@ namespace FullSD_InventoryManagement.Migrations
                         {
                             Id = 1,
                             CreatedBy = "System",
-                            DateCreated = new DateTime(2026, 1, 7, 17, 52, 12, 656, DateTimeKind.Local).AddTicks(1148),
-                            DateUpdated = new DateTime(2026, 1, 7, 17, 52, 12, 656, DateTimeKind.Local).AddTicks(1162),
+                            DateCreated = new DateTime(2026, 1, 7, 16, 36, 37, 187, DateTimeKind.Local).AddTicks(5081),
+                            DateUpdated = new DateTime(2026, 1, 7, 16, 36, 37, 187, DateTimeKind.Local).AddTicks(5095),
                             Name = "Pasir Ris",
                             UpdatedBy = "System"
                         },
@@ -154,8 +131,8 @@ namespace FullSD_InventoryManagement.Migrations
                         {
                             Id = 2,
                             CreatedBy = "System",
-                            DateCreated = new DateTime(2026, 1, 7, 17, 52, 12, 656, DateTimeKind.Local).AddTicks(1164),
-                            DateUpdated = new DateTime(2026, 1, 7, 17, 52, 12, 656, DateTimeKind.Local).AddTicks(1165),
+                            DateCreated = new DateTime(2026, 1, 7, 16, 36, 37, 187, DateTimeKind.Local).AddTicks(5097),
+                            DateUpdated = new DateTime(2026, 1, 7, 16, 36, 37, 187, DateTimeKind.Local).AddTicks(5098),
                             Name = "Woodlands",
                             UpdatedBy = "System"
                         });
@@ -196,8 +173,8 @@ namespace FullSD_InventoryManagement.Migrations
                         {
                             Id = 1,
                             CreatedBy = "System",
-                            DateCreated = new DateTime(2026, 1, 7, 17, 52, 12, 656, DateTimeKind.Local).AddTicks(1368),
-                            DateUpdated = new DateTime(2026, 1, 7, 17, 52, 12, 656, DateTimeKind.Local).AddTicks(1368),
+                            DateCreated = new DateTime(2026, 1, 7, 16, 36, 37, 187, DateTimeKind.Local).AddTicks(5445),
+                            DateUpdated = new DateTime(2026, 1, 7, 16, 36, 37, 187, DateTimeKind.Local).AddTicks(5448),
                             Name = "Egg",
                             Quantity = 200,
                             UpdatedBy = "System"
@@ -206,8 +183,8 @@ namespace FullSD_InventoryManagement.Migrations
                         {
                             Id = 2,
                             CreatedBy = "System",
-                            DateCreated = new DateTime(2026, 1, 7, 17, 52, 12, 656, DateTimeKind.Local).AddTicks(1370),
-                            DateUpdated = new DateTime(2026, 1, 7, 17, 52, 12, 656, DateTimeKind.Local).AddTicks(1371),
+                            DateCreated = new DateTime(2026, 1, 7, 16, 36, 37, 187, DateTimeKind.Local).AddTicks(5450),
+                            DateUpdated = new DateTime(2026, 1, 7, 16, 36, 37, 187, DateTimeKind.Local).AddTicks(5451),
                             Name = "Vacuum Cleaner",
                             Quantity = 130,
                             UpdatedBy = "System"
@@ -253,8 +230,8 @@ namespace FullSD_InventoryManagement.Migrations
                             Id = 1,
                             BranchID = 2,
                             CreatedBy = "System",
-                            DateCreated = new DateTime(2026, 1, 7, 17, 52, 12, 656, DateTimeKind.Local).AddTicks(1564),
-                            DateUpdated = new DateTime(2026, 1, 7, 17, 52, 12, 656, DateTimeKind.Local).AddTicks(1565),
+                            DateCreated = new DateTime(2026, 1, 7, 16, 36, 37, 187, DateTimeKind.Local).AddTicks(5630),
+                            DateUpdated = new DateTime(2026, 1, 7, 16, 36, 37, 187, DateTimeKind.Local).AddTicks(5630),
                             Location = "Lot A",
                             Movement = 0,
                             UpdatedBy = "System"
@@ -264,8 +241,8 @@ namespace FullSD_InventoryManagement.Migrations
                             Id = 2,
                             BranchID = 1,
                             CreatedBy = "System",
-                            DateCreated = new DateTime(2026, 1, 7, 17, 52, 12, 656, DateTimeKind.Local).AddTicks(1567),
-                            DateUpdated = new DateTime(2026, 1, 7, 17, 52, 12, 656, DateTimeKind.Local).AddTicks(1568),
+                            DateCreated = new DateTime(2026, 1, 7, 16, 36, 37, 187, DateTimeKind.Local).AddTicks(5632),
+                            DateUpdated = new DateTime(2026, 1, 7, 16, 36, 37, 187, DateTimeKind.Local).AddTicks(5633),
                             Location = "Lot B",
                             Movement = 0,
                             UpdatedBy = "System"
@@ -312,8 +289,8 @@ namespace FullSD_InventoryManagement.Migrations
                         {
                             Id = 1,
                             CreatedBy = "System",
-                            DateCreated = new DateTime(2026, 1, 7, 17, 52, 12, 656, DateTimeKind.Local).AddTicks(1458),
-                            DateUpdated = new DateTime(2026, 1, 7, 17, 52, 12, 656, DateTimeKind.Local).AddTicks(1459),
+                            DateCreated = new DateTime(2026, 1, 7, 16, 36, 37, 187, DateTimeKind.Local).AddTicks(5532),
+                            DateUpdated = new DateTime(2026, 1, 7, 16, 36, 37, 187, DateTimeKind.Local).AddTicks(5532),
                             ItemID = 1,
                             OrderID = 1,
                             Quantity = 50,
@@ -323,8 +300,8 @@ namespace FullSD_InventoryManagement.Migrations
                         {
                             Id = 2,
                             CreatedBy = "System",
-                            DateCreated = new DateTime(2026, 1, 7, 17, 52, 12, 656, DateTimeKind.Local).AddTicks(1461),
-                            DateUpdated = new DateTime(2026, 1, 7, 17, 52, 12, 656, DateTimeKind.Local).AddTicks(1462),
+                            DateCreated = new DateTime(2026, 1, 7, 16, 36, 37, 187, DateTimeKind.Local).AddTicks(5535),
+                            DateUpdated = new DateTime(2026, 1, 7, 16, 36, 37, 187, DateTimeKind.Local).AddTicks(5535),
                             ItemID = 2,
                             OrderID = 1,
                             Quantity = 20,
@@ -334,8 +311,8 @@ namespace FullSD_InventoryManagement.Migrations
                         {
                             Id = 3,
                             CreatedBy = "System",
-                            DateCreated = new DateTime(2026, 1, 7, 17, 52, 12, 656, DateTimeKind.Local).AddTicks(1464),
-                            DateUpdated = new DateTime(2026, 1, 7, 17, 52, 12, 656, DateTimeKind.Local).AddTicks(1464),
+                            DateCreated = new DateTime(2026, 1, 7, 16, 36, 37, 187, DateTimeKind.Local).AddTicks(5537),
+                            DateUpdated = new DateTime(2026, 1, 7, 16, 36, 37, 187, DateTimeKind.Local).AddTicks(5538),
                             ItemID = 1,
                             OrderID = 2,
                             Quantity = 10,
@@ -402,20 +379,6 @@ namespace FullSD_InventoryManagement.Migrations
                         .HasFilter("[NormalizedName] IS NOT NULL");
 
                     b.ToTable("AspNetRoles", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            Id = "10aca7f8-491d-49f5-adca-fc23831802bf",
-                            Name = "Administrator",
-                            NormalizedName = "ADMINISTRATOR"
-                        },
-                        new
-                        {
-                            Id = "57b5a20b-816e-4e93-a8d7-6f965389ec64",
-                            Name = "User",
-                            NormalizedName = "USER"
-                        });
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -503,13 +466,6 @@ namespace FullSD_InventoryManagement.Migrations
                     b.HasIndex("RoleId");
 
                     b.ToTable("AspNetUserRoles", (string)null);
-
-                    b.HasData(
-                        new
-                        {
-                            UserId = "d40252e1-7e47-4998-a6f2-c872657c5223",
-                            RoleId = "10aca7f8-491d-49f5-adca-fc23831802bf"
-                        });
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<string>", b =>
