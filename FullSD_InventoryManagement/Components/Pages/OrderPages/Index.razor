@@ -6,6 +6,8 @@
 @implements IAsyncDisposable
 @inject IDbContextFactory<FullSD_InventoryManagement.Data.FullSD_InventoryManagementContext> DbFactory
 
+@attribute [Authorize(Roles = "Administrator, User")]
+
 <PageTitle>Index</PageTitle>
 
 <h1>Index</h1>
@@ -14,10 +16,28 @@
     <a href="orders/create">Create New</a>
 </p>
 
-<QuickGrid Class="table" Items="context.Order">
+<QuickGrid Class="table" Items="context.Order.Include(o => o.OrderDetails).ThenInclude(od => od.Item)">
     <PropertyColumn Property="order => order.Movement" />
     <PropertyColumn Property="order => order.Location" />
     <PropertyColumn Property="order => order.BranchID" />
+    <TemplateColumn Title="Order Items" Context="order">
+        @if (order.OrderDetails != null && order.OrderDetails.Any())
+        {
+            <ul style="list-style-type: none; padding: 0; margin: 0;">
+                @foreach (var detail in order.OrderDetails)
+                {
+                    <li>
+                        <strong>@(detail.Item?.Name ?? "Unknown Item")</strong>
+                        (Qty: @detail.Quantity)
+                    </li>
+                }
+            </ul>
+        }
+        else
+        {
+            <span>Empty</span>
+        }
+    </TemplateColumn>
     <PropertyColumn Property="order => order.DateCreated" />
     <PropertyColumn Property="order => order.DateUpdated" />
     <PropertyColumn Property="order => order.CreatedBy" />

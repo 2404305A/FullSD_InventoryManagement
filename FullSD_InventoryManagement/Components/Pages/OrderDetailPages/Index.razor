@@ -6,6 +6,8 @@
 @implements IAsyncDisposable
 @inject IDbContextFactory<FullSD_InventoryManagement.Data.FullSD_InventoryManagementContext> DbFactory
 
+@attribute [Authorize(Roles = "Administrator, User")]
+
 <PageTitle>Index</PageTitle>
 
 <h1>Index</h1>
@@ -26,7 +28,9 @@
     <TemplateColumn Context="orderdetail">
         <a href="@($"orderdetails/edit?id={orderdetail.Id}")">Edit</a> |
         <a href="@($"orderdetails/details?id={orderdetail.Id}")">Details</a> |
-        <a href="@($"orderdetails/delete?id={orderdetail.Id}")">Delete</a>
+        <AuthorizeView Roles="Administrator">
+            | <a href="@($"orderdetails/delete?id={orderdetail.Id}")">Delete</a>
+        </AuthorizeView>>
     </TemplateColumn>
 </QuickGrid>
 
