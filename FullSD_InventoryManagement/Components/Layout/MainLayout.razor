@@ -1,16 +1,51 @@
 ﻿@inherits LayoutComponentBase
+@inject NavigationManager Navigation
 
 <div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
-
     <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
+        @* Nav Bar matches your darkgrey header style *@
+        <div class="top-row" style="display: flex; justify-content: space-between; align-items: center; height: 70px; padding: 0 80px; background-color: darkgrey; border-bottom: 1px solid #eee; width: 100%;">
+
+            @* Logo Section *@
+            <div style="display: flex; align-items: center; gap: 10px; font-weight: bold; cursor: pointer;" @onclick='() => Navigation.NavigateTo("/")'>
+                <span style="font-size: 1.2rem;">❈ GoInventory</span>
+            </div>
+
+            @* Links and Auth Section *@
+            <div style="display: flex; align-items: center; gap: 30px;">
+                <a href="about" style="text-decoration: none; color: steelblue; font-weight: bold;">About</a>
+                <a href="contact" style="text-decoration: none; color: steelblue; font-weight: bold;">Contact</a>
+
+                @{
+                    // Get the current relative URL to check which page we are on
+                    var relativeUri = Navigation.ToBaseRelativePath(Navigation.Uri).ToLower();
+                    var isAuthPage = relativeUri.Contains("login") || relativeUri.Contains("register");
+                }
+
+                @if (!isAuthPage)
+                {
+                    <AuthorizeView>
+                        <Authorized>
+                            @* Show "User" only if NOT on Login/Register and IS logged in *@
+                            <button @onclick='() => Navigation.NavigateTo("Account/Manage")'
+                                    style="background-color: black; color: white; border-radius: 10px; padding: 10px 25px; border: none; cursor: pointer; font-weight: bold; margin-left: 20px;">
+                                User
+                            </button>
+                        </Authorized>
+                        <Authorized>
+                            @* Show "Login" only if NOT on Login/Register and NOT logged in *@
+                            <button @onclick='() => Navigation.NavigateTo("Account/Login")'
+                                    style="background-color: black; color: white; border-radius: 10px; padding: 10px 25px; border: none; cursor: pointer; font-weight: bold; margin-left: 20px;">
+                                Login
+                            </button>
+                        </Authorized>
+                    </AuthorizeView>
+                }
+            </div>
         </div>
 
-        <article class="content px-4">
+        @* The Content Area *@
+        <article class="content">
             @Body
         </article>
     </main>

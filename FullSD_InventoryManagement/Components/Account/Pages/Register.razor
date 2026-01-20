@@ -18,50 +18,156 @@
 
 <PageTitle>Register</PageTitle>
 
-<h1>Register</h1>
+<style>
+    /* Navigation Bar Styles */
+    .nav-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px 80px;
+        background-color: white;
+    }
 
-<div class="row">
-    <div class="col-md-4">
-        <StatusMessage Message="@Message" />
-        <EditForm Model="Input" asp-route-returnUrl="@ReturnUrl" method="post" OnValidSubmit="RegisterUser" FormName="register">
+    .nav-logo {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 800;
+        font-size: 1.2rem;
+        cursor: pointer;
+    }
+
+    .nav-links {
+        display: flex;
+        align-items: center;
+        gap: 30px;
+    }
+
+        .nav-links a {
+            text-decoration: none;
+            color: #555;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+            .nav-links a:hover {
+                color: #000;
+            }
+
+    .btn-nav-login {
+        background-color: black;
+        color: white !important;
+        padding: 8px 20px;
+        border-radius: 8px;
+        font-weight: 600;
+    }
+
+    /* Form Container */
+    .register-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: calc(100vh - 80px); /* Subtracts header height */
+        background-color: #f9f9f9;
+        padding: 40px 20px;
+    }
+
+    .register-card {
+        background: white;
+        padding: 40px;
+        border-radius: 20px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+        width: 100%;
+        max-width: 500px;
+        border: 1px solid #e0e0e0;
+    }
+
+    /* (Rest of the previous styles: .register-header, .custom-input, etc.) */
+    .register-header {
+        text-align: center;
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 30px;
+    }
+
+    .form-group {
+        margin-bottom: 15px;
+    }
+
+    .form-label {
+        font-weight: 600;
+        font-size: 0.9rem;
+        margin-bottom: 5px;
+        display: block;
+    }
+
+    .custom-input {
+        width: 100%;
+        padding: 10px 15px;
+        border-radius: 10px;
+        border: 1px solid #ccc;
+    }
+
+    .btn-log-in {
+        background-color: black;
+        color: white;
+        width: 100%;
+        padding: 12px;
+        border-radius: 25px;
+        border: none;
+        font-weight: bold;
+        margin-top: 20px;
+        cursor: pointer;
+    }
+
+    .name-row {
+        display: flex;
+        gap: 15px;
+    }
+</style>
+
+
+<div class="register-container">
+    <div class="register-card">
+        <h2 class="register-header">Sign Up</h2>
+
+        <EditForm Model="Input" OnValidSubmit="RegisterUser" FormName="register">
             <DataAnnotationsValidator />
-            <h2>Create a new account.</h2>
-            <hr />
-            <ValidationSummary class="text-danger" role="alert" />
-            <div class="form-floating mb-3">
-                <InputText @bind-Value="Input.Email" class="form-control" autocomplete="username" aria-required="true" placeholder="name@example.com" />
-                <label for="email">Email</label>
-                <ValidationMessage For="() => Input.Email" class="text-danger" />
+            <StatusMessage Message="@Message" />
+
+            <div class="name-row">
+                <div class="form-group" style="flex: 1;">
+                    <label class="form-label">First Name</label>
+                    <InputText @bind-Value="Input.FirstName" class="custom-input" />
+                </div>
+                <div class="form-group" style="flex: 1;">
+                    <label class="form-label">Last Name</label>
+                    <InputText @bind-Value="Input.LastName" class="custom-input" />
+                </div>
             </div>
-            <div class="form-floating mb-3">
-                <InputText @bind-Value="Input.FirstName" class="form-control" autocomplete="firstname" aria-required="true" placeholder="Bill" />
-                <label for="email">First Name</label>
-                <ValidationMessage For="() => Input.FirstName" class="text-danger" />
+
+            <div class="form-group">
+                <label class="form-label">Email Address</label>
+                <InputText @bind-Value="Input.Email" class="custom-input" placeholder="email@example.com" />
             </div>
-            <div class="form-floating mb-3">
-                <InputText @bind-Value="Input.LastName" class="form-control" autocomplete="lastname" aria-required="true" placeholder="Gates" />
-                <label for="email">Last Name</label>
-                <ValidationMessage For="() => Input.LastName" class="text-danger" />
+
+            <div class="form-group">
+                <label class="form-label">Password</label>
+                <InputText type="password" @bind-Value="Input.Password" class="custom-input" />
             </div>
-            <div class="form-floating mb-3">
-                <InputText type="password" @bind-Value="Input.Password" class="form-control" autocomplete="new-password" aria-required="true" placeholder="password" />
-                <label for="password">Password</label>
-                <ValidationMessage For="() => Input.Password" class="text-danger" />
+
+            <div class="form-group">
+                <label class="form-label">Confirm Password</label>
+                <InputText type="password" @bind-Value="Input.ConfirmPassword" class="custom-input" />
             </div>
-            <div class="form-floating mb-3">
-                <InputText type="password" @bind-Value="Input.ConfirmPassword" class="form-control" autocomplete="new-password" aria-required="true" placeholder="password" />
-                <label for="confirm-password">Confirm Password</label>
-                <ValidationMessage For="() => Input.ConfirmPassword" class="text-danger" />
-            </div>
-            <button type="submit" class="w-100 btn btn-lg btn-primary">Register</button>
+
+            <button type="submit" class="btn-log-in">Log in</button>
+
+            <p style="text-align: center; font-size: 0.8rem; color: #888; margin-top: 15px;">
+                Already have an account? Log in <a href="Account/Login" style="color: #888; text-decoration: underline;">here</a>
+            </p>
         </EditForm>
-    </div>
-    <div class="col-md-6 col-md-offset-2">
-        <section>
-            <h3>Use another service to register.</h3>
-            <hr />
-            <ExternalLoginPicker />
-        </section>
     </div>
 </div>
 

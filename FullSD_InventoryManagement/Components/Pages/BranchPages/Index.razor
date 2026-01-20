@@ -3,30 +3,120 @@
 @using Microsoft.AspNetCore.Components.QuickGrid
 @using FullSD_InventoryManagement.Domain
 @using FullSD_InventoryManagement.Data
+@using Microsoft.EntityFrameworkCore.Metadata.Internal
 @implements IAsyncDisposable
 @inject IDbContextFactory<FullSD_InventoryManagement.Data.FullSD_InventoryManagementContext> DbFactory
 
 <PageTitle>Index</PageTitle>
 
-<h1>Index</h1>
+<style>
+    .dashboard-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 40px 20px;
+        background-color: #f9f9f9;
+        min-height: calc(100vh - 70px);
+    }
 
-<p>
-    <a href="branches/create">Create New</a>
-</p>
+    .welcome-text {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 40px;
+    }
 
-<QuickGrid Class="table" Items="context.Branch">
-    <PropertyColumn Property="branch => branch.Name" />
-    <PropertyColumn Property="branch => branch.DateCreated" />
-    <PropertyColumn Property="branch => branch.DateUpdated" />
-    <PropertyColumn Property="branch => branch.CreatedBy" />
-    <PropertyColumn Property="branch => branch.UpdatedBy" />
+    .tab-container {
+        display: flex;
+        gap: 30px;
+        width: 100%;
+        max-width: 1000px;
+        margin-bottom: 10px;
+        padding-left: 10px;
+    }
 
-    <TemplateColumn Context="branch">
-        <a href="@($"branches/edit?id={branch.Id}")">Edit</a> |
-        <a href="@($"branches/details?id={branch.Id}")">Details</a> |
-        <a href="@($"branches/delete?id={branch.Id}")">Delete</a>
-    </TemplateColumn>
-</QuickGrid>
+    .tab {
+        font-weight: 600;
+        color: #666;
+        text-decoration: none;
+        padding-bottom: 5px;
+    }
+
+        .tab.active {
+            color: black;
+            border-bottom: 2px solid black;
+        }
+
+    .inventory-card {
+        background: white;
+        border-radius: 20px;
+        padding: 30px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+        width: 100%;
+        max-width: 1000px;
+        border: 1px solid #e0e0e0;
+    }
+
+    .table-header {
+        font-size: 1.8rem;
+        font-weight: 700;
+        margin-bottom: 20px;
+    }
+
+    .custom-grid {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    
+        .custom-grid th {
+            background-color: #f8f9fa;
+            color: #888;
+            font-weight: 600;
+            text-align: left;
+            padding: 12px;
+            border: 1px solid #eee;
+        }
+
+    .btn-order {
+        background-color: black;
+        color: white;
+        padding: 10px 20px;
+        border-radius: 8px;
+        border: none;
+        float: right;
+        margin-top: 20px;
+        font-weight: 600;
+        cursor: pointer;
+    }
+</style>
+
+<div class="dashboard-container">
+    <h1 class="welcome-text">Welcome, User</h1>
+
+    <div class="tab-container">
+        <a href="/branches" class="tab active">Inventory</a>
+        <a href="/orders" class="tab">Order History</a>
+    </div>
+
+    <div class="inventory-card">
+        <h2 class="table-header">Branch Inventory</h2>
+
+        @if (context != null)
+        {
+            <QuickGrid Class="custom-grid" Items="context.Branch">
+                <PropertyColumn Title="Item ID" Property="branch => branch.Id" />
+                <PropertyColumn Title="Name" Property="branch => branch.Name" />
+                <PropertyColumn Title="Type" Property="branch => branch.Name" /> @* Adjust to your actual Type property *@
+                <PropertyColumn Title="Quantity" Property="branch => branch.Name" /> @* Adjust to your actual Qty property *@
+
+                <TemplateColumn Title="Actions">
+                    <a href="@($"branches/edit?id={context.Id}")" style="color: black;">Edit</a>
+                </TemplateColumn>
+            </QuickGrid>
+        }
+
+        <Component1 />
+    </div>
+</div>
 
 @code {
     private FullSD_InventoryManagementContext context = default!;

@@ -1,0 +1,11 @@
+﻿@page "/inventory"
+@using Microsoft.AspNetCore.Authorization
+
+@attribute [Authorize(Roles = "Administrator, User")]
+
+<PageTitle>Inventory</PageTitle>
+
+<h1>Invetory Management</h1>
+
+Company Inventory
+
