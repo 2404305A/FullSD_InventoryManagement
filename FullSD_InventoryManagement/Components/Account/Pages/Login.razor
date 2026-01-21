@@ -86,7 +86,7 @@
         if (result.Succeeded)
         {
             Logger.LogInformation("User logged in.");
-            NavigationManager.NavigateTo("/branches");
+            NavigationManager.NavigateTo("/inventory");
         }
         else if (result.RequiresTwoFactor)
         {

@@ -12,6 +12,7 @@ namespace FullSD_InventoryManagement.Data
         public DbSet<FullSD_InventoryManagement.Domain.User> User { get; set; } = default!;
         public DbSet<FullSD_InventoryManagement.Domain.Order> Order { get; set; } = default!;
         public DbSet<FullSD_InventoryManagement.Domain.OrderDetail> OrderDetail { get; set; } = default!;
+        public DbSet<FullSD_InventoryManagement.Domain.BranchInventory> BranchInventory { get; set; } = default!;
 
         protected override void OnModelCreating(ModelBuilder builder)
         {

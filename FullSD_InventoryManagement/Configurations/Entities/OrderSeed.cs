@@ -13,6 +13,7 @@ namespace FullSD_InventoryManagement.Configurations.Entities
                 {
                     Id = 1,
                     Movement = MovementType.In,
+                    Status = OrderStatus.Approved,
                     Location = "Lot A",
                     BranchID = 2,
                     DateCreated = DateTime.Now,
@@ -23,6 +24,8 @@ namespace FullSD_InventoryManagement.Configurations.Entities
                 new Order
                 {
                     Id = 2,
+                    Movement = MovementType.In, 
+                    Status = OrderStatus.Approved,
                     Location = "Lot B",
                     BranchID = 1,
                     DateCreated = DateTime.Now,

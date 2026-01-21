@@ -14,7 +14,6 @@ namespace FullSD_InventoryManagement.Configurations.Entities
                 {
                     Id = 1,
                     Name = "Egg",
-                    Quantity = 200,
                     DateCreated = DateTime.Now,
                     DateUpdated = DateTime.Now,
                     CreatedBy = "System",
@@ -24,7 +23,6 @@ namespace FullSD_InventoryManagement.Configurations.Entities
                 {
                     Id = 2,
                     Name = "Vacuum Cleaner",
-                    Quantity = 130,
                     DateCreated = DateTime.Now,
                     DateUpdated = DateTime.Now,
                     CreatedBy = "System",

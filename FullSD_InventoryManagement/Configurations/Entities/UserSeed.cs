@@ -21,7 +21,8 @@ namespace FullSD_InventoryManagement.Configurations.Entities
                     UserName = "admin@localhost.com",
                     NormalizedUserName = "ADMIN@LOCALHOST.COM",
                     PasswordHash = hasher.HashPassword(null, "P@ssword1"),
-                    EmailConfirmed = true
+                    EmailConfirmed = true,
+                    SecurityStamp = Guid.NewGuid().ToString()
                 }
             );
         }

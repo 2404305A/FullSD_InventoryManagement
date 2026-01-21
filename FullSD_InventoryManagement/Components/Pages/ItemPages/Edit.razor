@@ -28,11 +28,6 @@ else
                     <ValidationMessage For="() => Item.Name" class="text-danger" />
                 </div>
                 <div class="mb-3">
-                    <label for="quantity" class="form-label">Quantity:</label>
-                    <InputNumber id="quantity" @bind-Value="Item.Quantity" class="form-control" />
-                    <ValidationMessage For="() => Item.Quantity" class="text-danger" />
-                </div>
-                <div class="mb-3">
                     <label for="datecreated" class="form-label">DateCreated:</label>
                     <InputDate id="datecreated" @bind-Value="Item.DateCreated" class="form-control" />
                     <ValidationMessage For="() => Item.DateCreated" class="text-danger" />

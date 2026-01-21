@@ -1,10 +1,15 @@
 ﻿@page "/orders/create"
+@using FullSD_InventoryManagement.Data
+@using Microsoft.AspNetCore.Identity
 @using Microsoft.EntityFrameworkCore
 @using FullSD_InventoryManagement.Domain
-@inject IDbContextFactory<FullSD_InventoryManagement.Data.FullSD_InventoryManagementContext> DbFactory
+@using Microsoft.AspNetCore.Components.Authorization
+@inject IDbContextFactory<FullSD_InventoryManagementContext> DbFactory
 @inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider AuthStateProvider
+@inject UserManager<FullSD_InventoryManagementUser> UserManager
 
-<PageTitle>Create</PageTitle>
+<PageTitle>Create Order</PageTitle>
 
 <style>
     .dashboard-container {
@@ -15,33 +20,6 @@
         background-color: #f9f9f9;
         min-height: calc(100vh - 70px);
     }
-
-    .welcome-text {
-        font-size: 2.5rem;
-        font-weight: 700;
-        margin-bottom: 40px;
-        text-align: center;
-    }
-
-    .tab-container {
-        display: flex;
-        gap: 30px;
-        width: 100%;
-        max-width: 1100px;
-        margin-bottom: 10px;
-        padding-left: 10px;
-    }
-
-    .tab {
-        font-weight: 600;
-        color: #666;
-        text-decoration: none;
-    }
-
-        .tab.active {
-            color: black;
-            border-bottom: 2px solid black;
-        }
 
     .order-card {
         background: white;
@@ -59,209 +37,315 @@
         margin-bottom: 30px;
     }
 
-    .grid-layout {
-        display: grid;
-        grid-template-columns: 1fr 1.5fr; /* Matches the screenshot: small form, large table */
-        gap: 40px;
-    }
-
-    .form-group {
-        margin-bottom: 20px;
-    }
-
-    .form-label {
+    .section-title {
+        font-size: 1.2rem;
         font-weight: 600;
-        font-size: 0.9rem;
-        margin-bottom: 8px;
-        display: block;
+        margin-bottom: 15px;
+        margin-top: 20px;
+        border-bottom: 2px solid #eee;
+        padding-bottom: 10px;
     }
 
-    .custom-input {
-        width: 100%;
-        padding: 10px 15px;
-        border-radius: 10px;
-        border: 1px solid #ccc;
-    }
-
-    .btn-make-order {
+    .btn-black {
         background-color: black;
         color: white;
-        padding: 12px 25px;
-        border-radius: 10px;
+        border-radius: 8px;
         border: none;
-        font-weight: 700;
-        cursor: pointer;
+        font-weight: 600;
+        padding: 10px 20px;
     }
 
-    .item-table {
-        border: 1px solid #e0e0e0;
-        border-radius: 5px;
-        overflow: hidden;
+    .add-item-box {
+        background-color: #f8f9fa;
+        padding: 20px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        border: 1px solid #e9ecef;
     }
 </style>
 
+<div class="dashboard-container">
+    <div class="order-card">
+        <h1 class="form-header">Create New Order</h1>
 
-<h2>Order</h2>
-<hr />
-<div class="row">
-    <div class="col-md-4">
-        <EditForm method="post" Model="Order" OnValidSubmit="AddOrder" FormName="create" Enhance>
+        @if (!string.IsNullOrEmpty(ErrorMessage))
+        {
+            <div class="alert alert-danger">@ErrorMessage</div>
+        }
+
+        <EditForm Model="Order" OnValidSubmit="AddOrder" FormName="create">
             <DataAnnotationsValidator />
-            <ValidationSummary class="text-danger" role="alert" />
-            <div class="mb-3">
-                <label for="movement" class="form-label">Movement:</label>
-                <InputSelect id="movement" @bind-Value="Order.Movement" class="form-control">
-                    @foreach (var movement in Enum.GetValues(typeof(MovementType)))
+            <ValidationSummary class="text-danger" />
+
+            <div class="row">
+                <div class="col-md-5">
+                    <h3 class="section-title">Order Information</h3>
+
+                    <div class="mb-3">
+                        <label class="form-label"><strong>Branch:</strong></label>
+                        <input type="text" class="form-control" value="@branchName" disabled />
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="movement" class="form-label">Movement Type:</label>
+                        <InputSelect id="movement" @bind-Value="Order.Movement" class="form-control">
+                            @foreach (var movement in Enum.GetValues(typeof(MovementType)))
+                            {
+                                <option value="@movement">@movement</option>
+                            }
+                        </InputSelect>
+                    </div>
+                </div>
+
+                <div class="col-md-7">
+                    <h3 class="section-title">Order Items</h3>
+
+                    <div class="add-item-box">
+                        <div class="row g-2 align-items-end">
+                            <div class="col-md-6">
+                                <label class="form-label">Select Item</label>
+                                <select class="form-control" @bind="selectedItemId">
+                                    <option value="0">-- Choose Item --</option>
+                                    @foreach (var item in AvailableItems)
+                                    {
+                                        <option value="@item.Id">@item.Name</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Qty</label>
+                                <input type="number" class="form-control" @bind="selectedQty" min="1" />
+                            </div>
+                            <div class="col-md-3">
+                                <button type="button" class="btn btn-secondary w-100" @onclick="AddItemToOrder">Add</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    @if (Order.OrderDetails.Any())
                     {
-                        <option value="@movement">@movement</option>
+                        <table class="table table-bordered table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Item Name</th>
+                                    <th style="width: 80px;">Qty</th>
+                                    <th style="width: 100px;">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var detail in Order.OrderDetails)
+                                {
+                                    <tr>
+                                        <td>@GetItemName(detail.ItemID)</td>
+                                        <td>@detail.Quantity</td>
+                                        <td>
+                                            <button type="button" class="btn btn-outline-danger btn-sm"
+                                                    @onclick="() => RemoveItem(detail)">
+                                                Remove
+                                            </button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
                     }
-                </InputSelect>
-                <ValidationMessage For="() => Order.Movement" class="text-danger" />
+                    else
+                    {
+                        <div class="text-center p-4 text-muted border rounded" style="border-style: dashed !important;">
+                            No items added to this order yet.
+                        </div>
+                    }
+                </div>
             </div>
-            <div class="mb-3">
-                <label for="location" class="form-label">Location:</label>
-                <InputText id="location" @bind-Value="Order.Location" class="form-control" />
-                <ValidationMessage For="() => Order.Location" class="text-danger" />
+
+            <hr class="my-4" />
+
+            <div class="d-flex justify-content-between">
+                <a href="/orders" class="btn btn-outline-dark">Cancel</a>
+                <button type="submit" class="btn btn-black">Submit Order</button>
             </div>
-            <div class="mb-3">
-                <label for="branchid" class="form-label">BranchID:</label>
-                <InputNumber id="branchid" @bind-Value="Order.BranchID" class="form-control" />
-                <ValidationMessage For="() => Order.BranchID" class="text-danger" />
-            </div>
-            <div class="mb-3">
-                <label for="datecreated" class="form-label">DateCreated:</label>
-                <InputDate id="datecreated" @bind-Value="Order.DateCreated" class="form-control" />
-                <ValidationMessage For="() => Order.DateCreated" class="text-danger" />
-            </div>
-            <div class="mb-3">
-                <label for="dateupdated" class="form-label">DateUpdated:</label>
-                <InputDate id="dateupdated" @bind-Value="Order.DateUpdated" class="form-control" />
-                <ValidationMessage For="() => Order.DateUpdated" class="text-danger" />
-            </div>
-            <div class="mb-3">
-                <label for="createdby" class="form-label">CreatedBy:</label>
-                <InputText id="createdby" @bind-Value="Order.CreatedBy" class="form-control" />
-                <ValidationMessage For="() => Order.CreatedBy" class="text-danger" />
-            </div>
-            <div class="mb-3">
-                <label for="updatedby" class="form-label">UpdatedBy:</label>
-                <InputText id="updatedby" @bind-Value="Order.UpdatedBy" class="form-control" />
-                <ValidationMessage For="() => Order.UpdatedBy" class="text-danger" />
-            </div>
-            <button type="submit" class="btn btn-primary">Create</button>
+
         </EditForm>
     </div>
 </div>
-
-<div>
-    <a href="/orders">Back to List</a>
-</div>
-
-<style>
-    .dashboard-container {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        padding: 40px 20px;
-        background-color: #f9f9f9;
-        min-height: calc(100vh - 70px);
-    }
-
-    .welcome-text {
-        font-size: 2.5rem;
-        font-weight: 700;
-        margin-bottom: 40px;
-        text-align: center;
-    }
-
-    .tab-container {
-        display: flex;
-        gap: 30px;
-        width: 100%;
-        max-width: 1100px;
-        margin-bottom: 10px;
-        padding-left: 10px;
-    }
-
-    .tab {
-        font-weight: 600;
-        color: #666;
-        text-decoration: none;
-    }
-
-        .tab.active {
-            color: black;
-            border-bottom: 2px solid black;
-        }
-
-    .order-card {
-        background: white;
-        border-radius: 20px;
-        padding: 40px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.05);
-        width: 100%;
-        max-width: 1100px;
-        border: 1px solid #e0e0e0;
-    }
-
-    .form-header {
-        font-size: 2rem;
-        font-weight: 700;
-        margin-bottom: 30px;
-    }
-
-    .grid-layout {
-        display: grid;
-        grid-template-columns: 1fr 1.5fr; /* Matches the screenshot: small form, large table */
-        gap: 40px;
-    }
-
-    .form-group {
-        margin-bottom: 20px;
-    }
-
-    .form-label {
-        font-weight: 600;
-        font-size: 0.9rem;
-        margin-bottom: 8px;
-        display: block;
-    }
-
-    .custom-input {
-        width: 100%;
-        padding: 10px 15px;
-        border-radius: 10px;
-        border: 1px solid #ccc;
-    }
-
-    .btn-make-order {
-        background-color: black;
-        color: white;
-        padding: 12px 25px;
-        border-radius: 10px;
-        border: none;
-        font-weight: 700;
-        cursor: pointer;
-    }
-
-    .item-table {
-        border: 1px solid #e0e0e0;
-        border-radius: 5px;
-        overflow: hidden;
-    }
-</style>
-
 
 @code {
     [SupplyParameterFromForm]
     private Order Order { get; set; } = new();
 
-    // To protect from overposting attacks, see https://learn.microsoft.com/aspnet/core/blazor/forms/#mitigate-overposting-attacks.
+    private string? ErrorMessage;
+
+    // UI State
+    private string branchName = "Loading...";
+    private List<Item> AvailableItems = new();
+
+    // Inputs for the "Add Item" section
+    private int selectedItemId;
+    private int selectedQty = 1;
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = DbFactory.CreateDbContext();
+
+        // 1. Load Items for the dropdown
+        AvailableItems = await context.Item.ToListAsync();
+
+        // 2. Get User & Branch Info
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var userPrincipal = authState.User;
+        var userName = userPrincipal.Identity?.Name ?? "System";
+
+        var domainUser = await context.User
+            .FirstOrDefaultAsync(u => u.EmailAddress == userName || u.Username == userName);
+
+        if (domainUser != null)
+        {
+            Order.BranchID = domainUser.BranchID;
+            var branch = await context.Branch.FindAsync(domainUser.BranchID);
+            branchName = branch?.Name ?? "Unknown";
+            Order.Location = branchName;
+        }
+
+        // 3. Set Audit Fields
+        Order.CreatedBy = userName;
+        Order.UpdatedBy = userName;
+        Order.DateCreated = DateTime.Now;
+        Order.DateUpdated = DateTime.Now;
+    }
+
+    private void AddItemToOrder()
+    {
+        if (selectedItemId == 0) return;
+        if (selectedQty <= 0) return;
+
+        // --- MERGE LOGIC ---
+        // Check if item already exists in the list
+        var existing = Order.OrderDetails.FirstOrDefault(od => od.ItemID == selectedItemId);
+
+        if (existing != null)
+        {
+            // Update quantity of existing row
+            existing.Quantity += selectedQty;
+        }
+        else
+        {
+            // Create new row
+            Order.OrderDetails.Add(new OrderDetail
+            {
+                ItemID = selectedItemId,
+                Quantity = selectedQty,
+                CreatedBy = Order.CreatedBy,
+                UpdatedBy = Order.UpdatedBy,
+                DateCreated = DateTime.Now,
+                DateUpdated = DateTime.Now
+            });
+        }
+
+        // Reset inputs for next addition
+        selectedItemId = 0;
+        selectedQty = 1;
+    }
+
+    private void RemoveItem(OrderDetail detail)
+    {
+        // --- REMOVE LOGIC ---
+        Order.OrderDetails.Remove(detail);
+    }
+
+    private string GetItemName(int itemId)
+    {
+        return AvailableItems.FirstOrDefault(i => i.Id == itemId)?.Name ?? "Unknown ID";
+    }
+
     private async Task AddOrder()
     {
         using var context = DbFactory.CreateDbContext();
+        ErrorMessage = null;
+
+        if (!Order.OrderDetails.Any())
+        {
+            ErrorMessage = "Please add at least one item to the order.";
+            return;
+        }
+
+        // --- VALIDATION LOGIC (Check Stock) ---
+        if (Order.Movement == MovementType.Out)
+        {
+            foreach (var detail in Order.OrderDetails)
+            {
+                var stock = await context.BranchInventory
+                    .FirstOrDefaultAsync(b => b.BranchID == Order.BranchID && b.ItemID == detail.ItemID);
+
+                int currentStock = stock?.Quantity ?? 0;
+
+                var pendingQuantity = await context.OrderDetail
+                    .Include(od => od.Order)
+                    .Where(od => od.ItemID == detail.ItemID
+                                 && od.Order.BranchID == Order.BranchID
+                                 && od.Order.Status == OrderStatus.Pending
+                                 && od.Order.Movement == MovementType.Out)
+                    .SumAsync(od => od.Quantity);
+
+                if ((currentStock - pendingQuantity) < detail.Quantity)
+                {
+                    ErrorMessage = $"Insufficient stock for {GetItemName(detail.ItemID)}. Available: {currentStock - pendingQuantity}";
+                    return;
+                }
+            }
+        }
+
+        // --- STATUS LOGIC ---
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.IsInRole("Administrator"))
+        {
+            Order.Status = OrderStatus.Approved;
+            await ProcessInventoryMovement(context, Order);
+        }
+        else
+        {
+            Order.Status = OrderStatus.Pending;
+        }
+
         context.Order.Add(Order);
         await context.SaveChangesAsync();
         NavigationManager.NavigateTo("/orders");
+    }
+
+    private async Task ProcessInventoryMovement(FullSD_InventoryManagementContext context, Order order)
+    {
+        foreach (var detail in order.OrderDetails)
+        {
+            var inventory = await context.BranchInventory
+                .FirstOrDefaultAsync(bi => bi.BranchID == order.BranchID && bi.ItemID == detail.ItemID);
+
+            if (inventory == null)
+            {
+                inventory = new BranchInventory
+                {
+                    BranchID = order.BranchID,
+                    ItemID = detail.ItemID,
+                    Quantity = 0,
+                    CreatedBy = order.CreatedBy,
+                    UpdatedBy = order.UpdatedBy,
+                    DateCreated = DateTime.Now,
+                    DateUpdated = DateTime.Now
+                };
+                context.BranchInventory.Add(inventory);
+            }
+
+            if (order.Movement == MovementType.In)
+            {
+                inventory.Quantity += detail.Quantity;
+            }
+            else if (order.Movement == MovementType.Out)
+            {
+                inventory.Quantity -= detail.Quantity;
+            }
+
+            inventory.DateUpdated = DateTime.Now;
+            inventory.UpdatedBy = order.UpdatedBy;
+        }
     }
 }

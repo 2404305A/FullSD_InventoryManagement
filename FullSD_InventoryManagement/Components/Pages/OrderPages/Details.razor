@@ -1,10 +1,13 @@
 ﻿@page "/orders/details"
 @using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Components.Authorization
 @using FullSD_InventoryManagement.Domain
-@inject IDbContextFactory<FullSD_InventoryManagement.Data.FullSD_InventoryManagementContext> DbFactory
+@using FullSD_InventoryManagement.Data
+@inject IDbContextFactory<FullSD_InventoryManagementContext> DbFactory
 @inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider AuthStateProvider
 
-<PageTitle>Details</PageTitle>
+<PageTitle>Order Details</PageTitle>
 
 <h1>Details</h1>
 
@@ -15,44 +18,200 @@
     {
         <p><em>Loading...</em></p>
     }
-    else {
+    else
+    {
         <dl class="row">
+            <dt class="col-sm-2">Status</dt>
+            <dd class="col-sm-10">
+                @* styling the status for better visibility *@
+                <span class="badge @GetStatusBadgeClass(order.Status)">
+                    @order.Status
+                </span>
+            </dd>
+
             <dt class="col-sm-2">Movement</dt>
             <dd class="col-sm-10">@order.Movement</dd>
+
             <dt class="col-sm-2">Location</dt>
             <dd class="col-sm-10">@order.Location</dd>
+
             <dt class="col-sm-2">BranchID</dt>
             <dd class="col-sm-10">@order.BranchID</dd>
-            <dt class="col-sm-2">DateCreated</dt>
+
+            <dt class="col-sm-2">Date Created</dt>
             <dd class="col-sm-10">@order.DateCreated</dd>
-            <dt class="col-sm-2">DateUpdated</dt>
-            <dd class="col-sm-10">@order.DateUpdated</dd>
-            <dt class="col-sm-2">CreatedBy</dt>
+
+            <dt class="col-sm-2">Created By</dt>
             <dd class="col-sm-10">@order.CreatedBy</dd>
-            <dt class="col-sm-2">UpdatedBy</dt>
-            <dd class="col-sm-10">@order.UpdatedBy</dd>
         </dl>
-        <div>
+
+        @* Show Order Items *@
+        <h4>Items in this Order</h4>
+        @if (order.OrderDetails != null && order.OrderDetails.Any())
+        {
+            <table class="table table-striped table-bordered table-sm" style="max-width: 600px;">
+                <thead>
+                    <tr>
+                        <th>Item ID</th>
+                        <th>Quantity</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in order.OrderDetails)
+                    {
+                        <tr>
+                            <td>@item.ItemID</td>
+                            <td>@item.Quantity</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <p>No items found for this order.</p>
+        }
+
+        @* Admin Actions: Only visible to Admins if status is Pending *@
+        @if (isAdmin && order.Status == OrderStatus.Pending)
+        {
+            <div class="mt-4 mb-3 p-3 border rounded bg-light">
+                <h5>Admin Actions</h5>
+                <p class="text-muted small">Approving this order will update the physical inventory.</p>
+                <button class="btn btn-success me-2" @onclick="ApproveOrder">Approve Order</button>
+                <button class="btn btn-danger" @onclick="DenyOrder">Deny Order</button>
+            </div>
+            @if (!string.IsNullOrEmpty(statusMessage))
+            {
+                <div class="alert alert-info mt-2">@statusMessage</div>
+            }
+        }
+
+        <div class="mt-3">
             <a href="@($"/orders/edit?id={order.Id}")">Edit</a> |
-            <a href="@($"/orders")">Back to List</a>
+            <a href="/orders">Back to List</a>
         </div>
     }
 </div>
 
 @code {
     private Order? order;
+    private bool isAdmin = false;
+    private string? statusMessage;
 
     [SupplyParameterFromQuery]
     private int Id { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
+        // 1. Check User Role
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        isAdmin = user.IsInRole("Administrator");
+
+        // 2. Load Order with Details (Important: Include OrderDetails!)
         using var context = DbFactory.CreateDbContext();
-        order = await context.Order.FirstOrDefaultAsync(m => m.Id == Id);
+        order = await context.Order
+            .Include(o => o.OrderDetails)
+            .FirstOrDefaultAsync(m => m.Id == Id);
 
         if (order is null)
         {
             NavigationManager.NavigateTo("notfound");
+        }
+    }
+
+    private string GetStatusBadgeClass(OrderStatus status) => status switch
+    {
+        OrderStatus.Approved => "bg-success",
+        OrderStatus.Denied => "bg-danger",
+        _ => "bg-warning text-dark"
+    };
+
+    private async Task ApproveOrder()
+    {
+        if (order == null) return;
+
+        using var context = DbFactory.CreateDbContext();
+
+        // Re-fetch to ensure we are attached to the current context context
+        var dbOrder = await context.Order
+            .Include(o => o.OrderDetails)
+            .FirstOrDefaultAsync(o => o.Id == order.Id);
+
+        if (dbOrder == null || dbOrder.Status != OrderStatus.Pending)
+        {
+            statusMessage = "Order is no longer pending or cannot be found.";
+            return;
+        }
+
+        // --- INVENTORY UPDATE LOGIC ---
+        foreach (var detail in dbOrder.OrderDetails)
+        {
+            // Find existing inventory for this Branch + Item
+            var inventory = await context.BranchInventory
+                .FirstOrDefaultAsync(bi => bi.BranchID == dbOrder.BranchID && bi.ItemID == detail.ItemID);
+
+            // If it doesn't exist, create it (Initialize at 0)
+            if (inventory == null)
+            {
+                inventory = new BranchInventory
+                {
+                    BranchID = dbOrder.BranchID,
+                    ItemID = detail.ItemID,
+                    Quantity = 0,
+                    CreatedBy = "System", // Or current admin user
+                    UpdatedBy = "System",
+                    DateCreated = DateTime.Now,
+                    DateUpdated = DateTime.Now
+                };
+                context.BranchInventory.Add(inventory);
+            }
+
+            // Adjust stock based on movement
+            if (dbOrder.Movement == MovementType.In)
+            {
+                inventory.Quantity += detail.Quantity;
+            }
+            else if (dbOrder.Movement == MovementType.Out)
+            {
+                // Optional: Check if stock is sufficient before approving
+                if (inventory.Quantity < detail.Quantity)
+                {
+                    statusMessage = $"Error: Insufficient stock for Item {detail.ItemID}. Current: {inventory.Quantity}";
+                    return; // Stop the process
+                }
+                inventory.Quantity -= detail.Quantity;
+            }
+
+            // Update Metadata
+            inventory.DateUpdated = DateTime.Now;
+        }
+
+        // Update Status
+        dbOrder.Status = OrderStatus.Approved;
+        await context.SaveChangesAsync();
+
+        statusMessage = "Order Approved Successfully!";
+
+        // Refresh local UI object
+        order.Status = OrderStatus.Approved;
+    }
+
+    private async Task DenyOrder()
+    {
+        if (order == null) return;
+
+        using var context = DbFactory.CreateDbContext();
+        var dbOrder = await context.Order.FindAsync(order.Id);
+
+        if (dbOrder != null)
+        {
+            dbOrder.Status = OrderStatus.Denied;
+            await context.SaveChangesAsync();
+
+            statusMessage = "Order Denied.";
+            order.Status = OrderStatus.Denied;
         }
     }
 }

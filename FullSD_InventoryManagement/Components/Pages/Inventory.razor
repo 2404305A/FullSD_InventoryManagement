@@ -1,11 +1,245 @@
 ﻿@page "/inventory"
-@using Microsoft.AspNetCore.Authorization
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Identity
+@using FullSD_InventoryManagement.Domain
+@using FullSD_InventoryManagement.Data
+
+@inject IDbContextFactory<FullSD_InventoryManagementContext> DbFactory
+@inject AuthenticationStateProvider AuthStateProvider
+@inject UserManager<FullSD_InventoryManagementUser> UserManager
 
 @attribute [Authorize(Roles = "Administrator, User")]
 
 <PageTitle>Inventory</PageTitle>
 
-<h1>Invetory Management</h1>
+<style>
+    .dashboard-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 40px 20px;
+        background-color: #f9f9f9;
+        min-height: calc(100vh - 70px);
+    }
 
-Company Inventory
+    .welcome-text {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 40px;
+    }
 
+    .tab-container {
+        display: flex;
+        gap: 30px;
+        width: 100%;
+        max-width: 1000px;
+        margin-bottom: 10px;
+        padding-left: 10px;
+    }
+
+    .tab {
+        font-weight: 600;
+        color: #666;
+        text-decoration: none;
+        padding-bottom: 5px;
+        cursor: pointer;
+    }
+
+        .tab.active {
+            color: black;
+            border-bottom: 2px solid black;
+        }
+
+    .inventory-card {
+        background: white;
+        border-radius: 20px;
+        padding: 30px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+        width: 100%;
+        max-width: 1000px;
+        border: 1px solid #e0e0e0;
+    }
+
+    .table-header {
+        font-size: 1.8rem;
+        font-weight: 700;
+        margin-bottom: 20px;
+    }
+
+    .badge-secondary {
+        background-color: #6c757d;
+        color: white;
+        padding: 0.2em 0.5em;
+        border-radius: 0.25rem;
+        font-size: 0.85em;
+    }
+</style>
+
+<div class="dashboard-container">
+    <h1 class="welcome-text">Welcome, @(displayUserName ?? "User")</h1>
+
+    <div class="tab-container">
+        <a href="/inventory" class="tab active">Inventory</a>
+        <a href="/orders" class="tab">Order History</a>
+    </div>
+
+    <div class="inventory-card">
+        @if (isLoading)
+        {
+            <p><em>Loading inventory...</em></p>
+        }
+        else if (isAdmin)
+        {
+            <h2 class="table-header">Master Inventory (All Branches)</h2>
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Item Name</th>
+                        <th>Total Quantity</th>
+                        <th>Branch Breakdown</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in MasterInventory)
+                    {
+                        <tr>
+                            <td>@item.Name</td>
+                            <td><strong>@item.TotalQuantity</strong></td>
+                            <td>
+                                <ul class="list-unstyled mb-0" style="padding-left: 0;">
+                                    @foreach (var branchStock in item.BranchBreakdown)
+                                    {
+                                        <li style="margin-bottom: 4px;">
+                                            <span class="badge-secondary">@branchStock.BranchName</span>
+                                            : @branchStock.Quantity
+                                        </li>
+                                    }
+                                </ul>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <h2 class="table-header">@userBranchName Inventory</h2>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Item Name</th>
+                        <th>Quantity</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var stock in LocalInventory)
+                    {
+                        <tr>
+                            <td>@stock.ItemName</td>
+                            <td>@stock.Quantity</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+</div>
+
+@code {
+    private bool isAdmin = false;
+    private bool isLoading = true;
+    private string userBranchName = "My Branch";
+    private string? displayUserName;
+
+    private List<MasterInventoryViewModel> MasterInventory = new();
+    private List<LocalInventoryViewModel> LocalInventory = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = DbFactory.CreateDbContext();
+
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var userPrincipal = authState.User;
+        isAdmin = userPrincipal.IsInRole("Administrator");
+        var userName = userPrincipal.Identity?.Name;
+
+        // 1. Get First Name from Identity System (FullSD_InventoryManagementUser)
+        var identityUser = await UserManager.GetUserAsync(userPrincipal);
+        if (identityUser != null && !string.IsNullOrEmpty(identityUser.FirstName))
+        {
+            displayUserName = identityUser.FirstName;
+        }
+        else
+        {
+            displayUserName = userName;
+        }
+
+        if (isAdmin)
+        {
+            // Admin View Logic
+            var data = await context.BranchInventory
+                .Include(bi => bi.Item)
+                .Include(bi => bi.Branch)
+                .ToListAsync();
+
+            MasterInventory = data
+                .GroupBy(x => x.Item)
+                .Select(g => new MasterInventoryViewModel
+                {
+                    Name = g.Key?.Name ?? "Unknown",
+                    TotalQuantity = g.Sum(x => x.Quantity),
+                    BranchBreakdown = g.Select(b => new BranchStockModel
+                    {
+                        BranchName = b.Branch?.Name ?? "Unknown",
+                        Quantity = b.Quantity
+                    }).ToList()
+                }).ToList();
+        }
+        else
+        {
+            // 2. Get BranchID from Domain System (Domain.User)
+            // Note: This variable 'domainUser' is distinct from 'identityUser' above
+            var domainUser = await context.User
+                .FirstOrDefaultAsync(u => u.EmailAddress == userName || u.Username == userName);
+
+            if (domainUser != null)
+            {
+                var branch = await context.Branch.FindAsync(domainUser.BranchID);
+                userBranchName = branch?.Name ?? "Unknown Branch";
+
+                var data = await context.BranchInventory
+                    .Include(bi => bi.Item)
+                    .Where(bi => bi.BranchID == domainUser.BranchID)
+                    .ToListAsync();
+
+                LocalInventory = data.Select(bi => new LocalInventoryViewModel
+                {
+                    ItemName = bi.Item?.Name ?? "Unknown",
+                    Quantity = bi.Quantity
+                }).ToList();
+            }
+        }
+
+        isLoading = false;
+    }
+
+    public class MasterInventoryViewModel
+    {
+        public string Name { get; set; } = "";
+        public int TotalQuantity { get; set; }
+        public List<BranchStockModel> BranchBreakdown { get; set; } = new();
+    }
+
+    public class BranchStockModel
+    {
+        public string BranchName { get; set; } = "";
+        public int Quantity { get; set; }
+    }
+
+    public class LocalInventoryViewModel
+    {
+        public string ItemName { get; set; } = "";
+        public int Quantity { get; set; }
+    }
+}
