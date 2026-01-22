@@ -1,14 +1,18 @@
 ﻿@page "/orders"
 @using Microsoft.EntityFrameworkCore
 @using Microsoft.AspNetCore.Components.QuickGrid
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Identity
 @using FullSD_InventoryManagement.Domain
 @using FullSD_InventoryManagement.Data
 @implements IAsyncDisposable
 @inject IDbContextFactory<FullSD_InventoryManagement.Data.FullSD_InventoryManagementContext> DbFactory
+@inject AuthenticationStateProvider AuthStateProvider
+@inject UserManager<FullSD_InventoryManagementUser> UserManager
 
 @attribute [Authorize(Roles = "Administrator, User")]
 
-<PageTitle>Index</PageTitle>
+<PageTitle>Order History</PageTitle>
 
 <style>
     .dashboard-container {
@@ -30,7 +34,7 @@
         display: flex;
         gap: 30px;
         width: 100%;
-        max-width: 1000px;
+        max-width: 1100px;
         margin-bottom: 10px;
         padding-left: 10px;
     }
@@ -40,6 +44,7 @@
         color: #666;
         text-decoration: none;
         padding-bottom: 5px;
+        cursor: pointer;
     }
 
         .tab.active {
@@ -53,7 +58,7 @@
         padding: 30px;
         box-shadow: 0 4px 20px rgba(0,0,0,0.05);
         width: 100%;
-        max-width: 1000px;
+        max-width: 1100px;
         border: 1px solid #e0e0e0;
     }
 
@@ -61,75 +66,178 @@
         font-size: 1.8rem;
         font-weight: 700;
         margin-bottom: 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
     }
 
-    .custom-grid {
+    .btn-create {
+        background-color: black;
+        color: white;
+        text-decoration: none;
+        padding: 10px 20px;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        font-weight: 600;
+    }
+
+        .btn-create:hover {
+            background-color: #333;
+            color: white;
+        }
+
+    /* Grid Styles */
+    ::deep .quickgrid-table {
         width: 100%;
         border-collapse: collapse;
     }
 
-        /* Target the QuickGrid specifically */
-        .custom-grid th {
-            background-color: #fcfcfc;
+        ::deep .quickgrid-table th {
+            background-color: #f8f9fa;
             color: #888;
             font-weight: 600;
             text-align: left;
             padding: 12px;
-            border-bottom: 1px solid #eee;
+            border-bottom: 2px solid #eee;
         }
 
-        .custom-grid td {
+        ::deep .quickgrid-table td {
             padding: 12px;
             border-bottom: 1px solid #f5f5f5;
+            vertical-align: middle;
         }
 </style>
 
-<h1>Index</h1>
+<div class="dashboard-container">
+    <h1 class="welcome-text">Welcome, @(displayUserName ?? "User")</h1>
 
-<p>
-    <a href="orders/create">Create New</a>
-</p>
-
-<QuickGrid Class="table" Items="context.Order.Include(o => o.OrderDetails).ThenInclude(od => od.Item)">
-    <PropertyColumn Property="order => order.Movement" />
-    <PropertyColumn Property="order => order.Location" />
-    <PropertyColumn Property="order => order.BranchID" />
-    <TemplateColumn Title="Order Items" Context="order">
-        @if (order.OrderDetails != null && order.OrderDetails.Any())
+    @* Navigation Tabs *@
+    <div class="tab-container">
+        <a href="/inventory" class="tab active">Inventory</a>
+        <a href="/orders" class="tab">Order History</a>
+        @if (isAdmin)
         {
-            <ul style="list-style-type: none; padding: 0; margin: 0;">
-                @foreach (var detail in order.OrderDetails)
-                {
-                    <li>
-                        <strong>@(detail.Item?.Name ?? "Unknown Item")</strong>
-                        (Qty: @detail.Quantity)
-                    </li>
-                }
-            </ul>
+            <a href="/orders/pending" class="tab">Pending Approvals</a>
+        }
+    </div>
+
+    <div class="inventory-card">
+        <div class="table-header">
+            <span>Order History</span>
+            <a href="orders/create" class="btn-create">+ Create New Order</a>
+        </div>
+
+        @if (FilteredOrders != null)
+        {
+            <QuickGrid Class="quickgrid-table" Items="FilteredOrders">
+                <PropertyColumn Property="order => order.Id" Title="ID" Sortable="true" />
+
+                <TemplateColumn Title="Status" Sortable="true">
+                    @switch (context.Status)
+                    {
+                        case OrderStatus.Approved:
+                            <span class="badge bg-success">Approved</span>
+                            break;
+                        case OrderStatus.Denied:
+                            <span class="badge bg-danger">Denied</span>
+                            break;
+                        default:
+                            <span class="badge bg-warning text-dark">Pending</span>
+                            break;
+                    }
+                </TemplateColumn>
+
+                <PropertyColumn Property="order => order.Movement" Sortable="true" />
+                <PropertyColumn Property="order => order.Location" Title="Branch/Loc" Sortable="true" />
+
+                <TemplateColumn Title="Items">
+                    @if (context.OrderDetails.Any())
+                    {
+                        <ul class="list-unstyled m-0 small">
+                            @foreach (var detail in context.OrderDetails)
+                            {
+                                <li>
+                                    <strong>@(detail.Item?.Name ?? "Unknown")</strong>: @detail.Quantity
+                                </li>
+                            }
+                        </ul>
+                    }
+                    else
+                    {
+                        <span class="text-muted">-</span>
+                    }
+                </TemplateColumn>
+
+                <PropertyColumn Property="order => order.DateCreated" Title="Date" Format="MMM dd, yyyy" Sortable="true" />
+                <PropertyColumn Property="order => order.CreatedBy" Title="User" Sortable="true" />
+
+                <TemplateColumn Title="Actions">
+                    <a href="@($"orders/details?id={context.Id}")" class="text-decoration-none fw-bold text-dark">Details</a>
+                    @if (isAdmin)
+                    {
+                        <span class="mx-1">|</span>
+                        <a href="@($"orders/delete?id={context.Id}")" class="text-danger text-decoration-none">Delete</a>
+                    }
+                </TemplateColumn>
+            </QuickGrid>
         }
         else
         {
-            <span>Empty</span>
+            <p>Loading orders...</p>
         }
-    </TemplateColumn>
-    <PropertyColumn Property="order => order.DateCreated" />
-    <PropertyColumn Property="order => order.DateUpdated" />
-    <PropertyColumn Property="order => order.CreatedBy" />
-    <PropertyColumn Property="order => order.UpdatedBy" />
-
-    <TemplateColumn Context="order">
-        <a href="@($"orders/edit?id={order.Id}")">Edit</a> |
-        <a href="@($"orders/details?id={order.Id}")">Details</a> |
-        <a href="@($"orders/delete?id={order.Id}")">Delete</a>
-    </TemplateColumn>
-</QuickGrid>
+    </div>
+</div>
 
 @code {
     private FullSD_InventoryManagementContext context = default!;
+    private IQueryable<Order>? FilteredOrders;
 
-    protected override void OnInitialized()
+    private bool isAdmin = false;
+    private string? displayUserName;
+
+    protected override async Task OnInitializedAsync()
     {
         context = DbFactory.CreateDbContext();
+
+        // 1. Identify User Role and Name
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var userPrincipal = authState.User;
+        isAdmin = userPrincipal.IsInRole("Administrator");
+        var userName = userPrincipal.Identity?.Name;
+
+        // Get Display Name (Cosmetic)
+        var identityUser = await UserManager.GetUserAsync(userPrincipal);
+        displayUserName = (!string.IsNullOrEmpty(identityUser?.FirstName)) ? identityUser.FirstName : userName;
+
+        // 2. Filter Data Based on Role
+        if (isAdmin)
+        {
+            // Admin sees ALL orders
+            FilteredOrders = context.Order
+                .Include(o => o.OrderDetails)
+                .ThenInclude(od => od.Item)
+                .OrderByDescending(o => o.DateCreated);
+        }
+        else
+        {
+            // User sees ONLY their Branch orders
+            var domainUser = await context.User
+                .FirstOrDefaultAsync(u => u.EmailAddress == userName || u.Username == userName);
+
+            if (domainUser != null)
+            {
+                FilteredOrders = context.Order
+                    .Where(o => o.BranchID == domainUser.BranchID)
+                    .Include(o => o.OrderDetails)
+                    .ThenInclude(od => od.Item)
+                    .OrderByDescending(o => o.DateCreated);
+            }
+            else
+            {
+                // Fallback if user has no branch assigned (Empty List)
+                FilteredOrders = Enumerable.Empty<Order>().AsQueryable();
+            }
+        }
     }
 
     public async ValueTask DisposeAsync() => await context.DisposeAsync();

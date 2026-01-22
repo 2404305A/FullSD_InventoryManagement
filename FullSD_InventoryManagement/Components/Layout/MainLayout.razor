@@ -26,19 +26,27 @@
                 {
                     <AuthorizeView>
                         <Authorized>
-                            @* Show "User" only if NOT on Login/Register and IS logged in *@
-                            <button @onclick='() => Navigation.NavigateTo("Account/Manage")'
-                                    style="background-color: black; color: white; border-radius: 10px; padding: 10px 25px; border: none; cursor: pointer; font-weight: bold; margin-left: 20px;">
+                            @* This block shows ONLY when the user IS logged in *@
+                            <a href="Account/Manage"
+                               style="background-color: black; color: white; border-radius: 10px; padding: 10px 25px; border: none; cursor: pointer; font-weight: bold; margin-left: 20px; text-decoration: none;">
                                 User
-                            </button>
+                            </a>
+                            <form action="Account/Logout" method="post" style="display: inline;">
+                                <AntiforgeryToken />
+                                <input type="hidden" name="ReturnUrl" value="" />
+                                <button type="submit"
+                                        style="background-color: darkred; color: white; border-radius: 10px; padding: 10px 25px; border: none; cursor: pointer; font-weight: bold; margin-left: 10px;">
+                                    Logout
+                                </button>
+                            </form>
                         </Authorized>
-                        <Authorized>
-                            @* Show "Login" only if NOT on Login/Register and NOT logged in *@
-                            <button @onclick='() => Navigation.NavigateTo("Account/Login")'
-                                    style="background-color: black; color: white; border-radius: 10px; padding: 10px 25px; border: none; cursor: pointer; font-weight: bold; margin-left: 20px;">
+                        <NotAuthorized>
+                            @* This block shows ONLY when the user is NOT logged in *@
+                            <a href="Account/Login"
+                               style="background-color: black; color: white; border-radius: 10px; padding: 10px 25px; border: none; cursor: pointer; font-weight: bold; margin-left: 20px; text-decoration: none;">
                                 Login
-                            </button>
-                        </Authorized>
+                            </a>
+                        </NotAuthorized>
                     </AuthorizeView>
                 }
             </div>

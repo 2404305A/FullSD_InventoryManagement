@@ -1,0 +1,40 @@
+﻿@page "/about"
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 text-center">
+            <h1 class="display-4 mb-4">About GoInventory</h1>
+            <p>
+                GoInventory is an inventory management software designed to help companies efficiently track and manage the movements and levels of supplies and inventory across multiple locations.
+            </p>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <p>
+            Made by: Rifqy and Elijah :D
+        </p>
+    </div>
+    <div class="row mt-5">
+        <div class="col-12 text-center">
+            <hr class="mb-4" />
+            <div class="d-flex justify-content-center gap-3">
+                <AuthorizeView>
+                    <Authorized>
+                        <a href="/inventory" class="btn btn-outline-secondary px-4">
+                            <span class="bi bi-arrow-left" aria-hidden="true"></span> Back to Inventory
+                        </a>
+                    </Authorized>
+                    <NotAuthorized>
+                        <a href="/" class="btn btn-outline-secondary px-4">
+                            <span class="bi bi-arrow-left" aria-hidden="true"></span> Back to Home
+                        </a>
+                    </NotAuthorized>
+                </AuthorizeView>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+
+}

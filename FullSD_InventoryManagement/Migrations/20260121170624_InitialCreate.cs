@@ -307,15 +307,15 @@ namespace FullSD_InventoryManagement.Migrations
             migrationBuilder.InsertData(
                 table: "AspNetUsers",
                 columns: new[] { "Id", "AccessFailedCount", "ConcurrencyStamp", "Email", "EmailConfirmed", "FirstName", "LastName", "LockoutEnabled", "LockoutEnd", "NormalizedEmail", "NormalizedUserName", "PasswordHash", "PhoneNumber", "PhoneNumberConfirmed", "SecurityStamp", "TwoFactorEnabled", "UserName" },
-                values: new object[] { "d40252e1-7e47-4998-a6f2-c872657c5223", 0, "aae4df75-731a-409c-b6d0-ea63f510848e", "admin@localhost.com", true, "Admin", "User", false, null, "ADMIN@LOCALHOST.COM", "ADMIN@LOCALHOST.COM", "AQAAAAIAAYagAAAAEBfAYpVZVOqR9RUS7Wm7AAaUK6lp7JswMbLSNpx0nXoAzhwkF3OKAIpA0S4qWp1tKw==", null, false, "2985d617-51ea-4655-8b8d-fd8409897d95", false, "admin@localhost.com" });
+                values: new object[] { "d40252e1-7e47-4998-a6f2-c872657c5223", 0, "9ca36b93-935f-4010-855e-77b1424cc949", "admin@localhost.com", true, "Admin", "User", false, null, "ADMIN@LOCALHOST.COM", "ADMIN@LOCALHOST.COM", "AQAAAAIAAYagAAAAEE3Ng1b1daj4nzzn4CRFHJPGUUoFoxjoIISjfl0TLpzmRthrVupwYDYpwVH4MvB3eg==", null, false, "c9b4912f-2cf7-46e6-8599-d3fac820e586", false, "admin@localhost.com" });
 
             migrationBuilder.InsertData(
                 table: "Branch",
                 columns: new[] { "Id", "CreatedBy", "DateCreated", "DateUpdated", "Name", "UpdatedBy" },
                 values: new object[,]
                 {
-                    { 1, "System", new DateTime(2026, 1, 21, 23, 48, 22, 371, DateTimeKind.Local).AddTicks(9371), new DateTime(2026, 1, 21, 23, 48, 22, 371, DateTimeKind.Local).AddTicks(9386), "Pasir Ris", "System" },
-                    { 2, "System", new DateTime(2026, 1, 21, 23, 48, 22, 371, DateTimeKind.Local).AddTicks(9389), new DateTime(2026, 1, 21, 23, 48, 22, 371, DateTimeKind.Local).AddTicks(9390), "Woodlands", "System" }
+                    { 1, "System", new DateTime(2026, 1, 22, 1, 6, 21, 323, DateTimeKind.Local).AddTicks(7805), new DateTime(2026, 1, 22, 1, 6, 21, 323, DateTimeKind.Local).AddTicks(7833), "Pasir Ris", "System" },
+                    { 2, "System", new DateTime(2026, 1, 22, 1, 6, 21, 323, DateTimeKind.Local).AddTicks(7837), new DateTime(2026, 1, 22, 1, 6, 21, 323, DateTimeKind.Local).AddTicks(7839), "Woodlands", "System" }
                 });
 
             migrationBuilder.InsertData(
@@ -323,8 +323,8 @@ namespace FullSD_InventoryManagement.Migrations
                 columns: new[] { "Id", "CreatedBy", "DateCreated", "DateUpdated", "Name", "UpdatedBy" },
                 values: new object[,]
                 {
-                    { 1, "System", new DateTime(2026, 1, 21, 23, 48, 22, 371, DateTimeKind.Local).AddTicks(9627), new DateTime(2026, 1, 21, 23, 48, 22, 371, DateTimeKind.Local).AddTicks(9628), "Egg", "System" },
-                    { 2, "System", new DateTime(2026, 1, 21, 23, 48, 22, 371, DateTimeKind.Local).AddTicks(9631), new DateTime(2026, 1, 21, 23, 48, 22, 371, DateTimeKind.Local).AddTicks(9631), "Vacuum Cleaner", "System" }
+                    { 1, "System", new DateTime(2026, 1, 22, 1, 6, 21, 323, DateTimeKind.Local).AddTicks(8349), new DateTime(2026, 1, 22, 1, 6, 21, 323, DateTimeKind.Local).AddTicks(8353), "Egg", "System" },
+                    { 2, "System", new DateTime(2026, 1, 22, 1, 6, 21, 323, DateTimeKind.Local).AddTicks(8356), new DateTime(2026, 1, 22, 1, 6, 21, 323, DateTimeKind.Local).AddTicks(8357), "Vacuum Cleaner", "System" }
                 });
 
             migrationBuilder.InsertData(
@@ -332,9 +332,14 @@ namespace FullSD_InventoryManagement.Migrations
                 columns: new[] { "Id", "BranchID", "CreatedBy", "DateCreated", "DateUpdated", "Location", "Movement", "Status", "UpdatedBy" },
                 values: new object[,]
                 {
-                    { 1, 2, "System", new DateTime(2026, 1, 21, 23, 48, 22, 371, DateTimeKind.Local).AddTicks(9853), new DateTime(2026, 1, 21, 23, 48, 22, 371, DateTimeKind.Local).AddTicks(9854), "Lot A", 0, 1, "System" },
-                    { 2, 1, "System", new DateTime(2026, 1, 21, 23, 48, 22, 371, DateTimeKind.Local).AddTicks(9857), new DateTime(2026, 1, 21, 23, 48, 22, 371, DateTimeKind.Local).AddTicks(9858), "Lot B", 0, 1, "System" }
+                    { 1, 2, "System", new DateTime(2026, 1, 22, 1, 6, 21, 323, DateTimeKind.Local).AddTicks(8920), new DateTime(2026, 1, 22, 1, 6, 21, 323, DateTimeKind.Local).AddTicks(8924), "Lot A", 0, 1, "System" },
+                    { 2, 1, "System", new DateTime(2026, 1, 22, 1, 6, 21, 323, DateTimeKind.Local).AddTicks(8928), new DateTime(2026, 1, 22, 1, 6, 21, 323, DateTimeKind.Local).AddTicks(8929), "Lot B", 0, 1, "System" }
                 });
+
+            migrationBuilder.InsertData(
+                table: "User",
+                columns: new[] { "Id", "BranchID", "CreatedBy", "DateCreated", "DateUpdated", "EmailAddress", "UpdatedBy", "Username" },
+                values: new object[] { 1, 1, "System", new DateTime(2026, 1, 22, 1, 6, 21, 486, DateTimeKind.Local).AddTicks(7643), new DateTime(2026, 1, 22, 1, 6, 21, 486, DateTimeKind.Local).AddTicks(7674), "admin@localhost.com", "System", "admin@localhost.com" });
 
             migrationBuilder.InsertData(
                 table: "AspNetUserRoles",
@@ -346,9 +351,9 @@ namespace FullSD_InventoryManagement.Migrations
                 columns: new[] { "Id", "CreatedBy", "DateCreated", "DateUpdated", "ItemID", "OrderID", "Quantity", "UpdatedBy" },
                 values: new object[,]
                 {
-                    { 1, "System", new DateTime(2026, 1, 21, 23, 48, 22, 371, DateTimeKind.Local).AddTicks(9741), new DateTime(2026, 1, 21, 23, 48, 22, 371, DateTimeKind.Local).AddTicks(9742), 1, 1, 50, "System" },
-                    { 2, "System", new DateTime(2026, 1, 21, 23, 48, 22, 371, DateTimeKind.Local).AddTicks(9745), new DateTime(2026, 1, 21, 23, 48, 22, 371, DateTimeKind.Local).AddTicks(9746), 2, 1, 20, "System" },
-                    { 3, "System", new DateTime(2026, 1, 21, 23, 48, 22, 371, DateTimeKind.Local).AddTicks(9748), new DateTime(2026, 1, 21, 23, 48, 22, 371, DateTimeKind.Local).AddTicks(9749), 1, 2, 10, "System" }
+                    { 1, "System", new DateTime(2026, 1, 22, 1, 6, 21, 323, DateTimeKind.Local).AddTicks(8650), new DateTime(2026, 1, 22, 1, 6, 21, 323, DateTimeKind.Local).AddTicks(8654), 1, 1, 50, "System" },
+                    { 2, "System", new DateTime(2026, 1, 22, 1, 6, 21, 323, DateTimeKind.Local).AddTicks(8658), new DateTime(2026, 1, 22, 1, 6, 21, 323, DateTimeKind.Local).AddTicks(8659), 2, 1, 20, "System" },
+                    { 3, "System", new DateTime(2026, 1, 22, 1, 6, 21, 323, DateTimeKind.Local).AddTicks(8662), new DateTime(2026, 1, 22, 1, 6, 21, 323, DateTimeKind.Local).AddTicks(8663), 1, 2, 10, "System" }
                 });
 
             migrationBuilder.CreateIndex(

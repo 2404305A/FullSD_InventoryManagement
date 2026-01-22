@@ -1,0 +1,273 @@
+﻿@page "/orders/pending"
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Components.QuickGrid
+@using Microsoft.AspNetCore.Components.Authorization
+@using FullSD_InventoryManagement.Domain
+@using FullSD_InventoryManagement.Data
+@implements IAsyncDisposable
+@inject IDbContextFactory<FullSD_InventoryManagement.Data.FullSD_InventoryManagementContext> DbFactory
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager NavigationManager
+
+@attribute [Authorize(Roles = "Administrator")]
+@rendermode InteractiveServer
+
+<PageTitle>Pending Approvals</PageTitle>
+
+<style>
+    .dashboard-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 40px 20px;
+        background-color: #f9f9f9;
+        min-height: calc(100vh - 70px);
+    }
+
+    .welcome-text {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 40px;
+    }
+
+    .tab-container {
+        display: flex;
+        gap: 30px;
+        width: 100%;
+        max-width: 1100px;
+        margin-bottom: 10px;
+        padding-left: 10px;
+    }
+
+    .tab {
+        font-weight: 600;
+        color: #666;
+        text-decoration: none;
+        padding-bottom: 5px;
+        cursor: pointer;
+    }
+
+        .tab.active {
+            color: black;
+            border-bottom: 2px solid black;
+        }
+
+    .inventory-card {
+        background: white;
+        border-radius: 20px;
+        padding: 30px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+        width: 100%;
+        max-width: 1100px;
+        border: 1px solid #e0e0e0;
+    }
+
+    .table-header {
+        font-size: 1.8rem;
+        font-weight: 700;
+        margin-bottom: 20px;
+    }
+
+    /* Grid & Button Styles */
+    ::deep .quickgrid-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+        ::deep .quickgrid-table th {
+            background-color: #f8f9fa;
+            color: #888;
+            font-weight: 600;
+            text-align: left;
+            padding: 12px;
+            border-bottom: 2px solid #eee;
+        }
+
+        ::deep .quickgrid-table td {
+            padding: 12px;
+            border-bottom: 1px solid #f5f5f5;
+            vertical-align: middle;
+        }
+
+    .btn-approve {
+        background-color: #198754;
+        color: white;
+        border: none;
+        padding: 5px 10px;
+        border-radius: 5px;
+        font-weight: 600;
+        font-size: 0.8rem;
+        margin-right: 5px;
+    }
+
+        .btn-approve:hover {
+            background-color: #157347;
+        }
+
+    .btn-deny {
+        background-color: #dc3545;
+        color: white;
+        border: none;
+        padding: 5px 10px;
+        border-radius: 5px;
+        font-weight: 600;
+        font-size: 0.8rem;
+    }
+
+        .btn-deny:hover {
+            background-color: #bb2d3b;
+        }
+</style>
+
+<div class="dashboard-container">
+    @* UPDATED HEADER HERE *@
+    <h1 class="welcome-text">Welcome, Admin</h1>
+
+    <div class="tab-container">
+        <a href="/inventory" class="tab">Inventory</a>
+        <a href="/orders" class="tab">Order History</a>
+        <a href="/orders/pending" class="tab active">Pending Approvals</a>
+    </div>
+
+    <div class="inventory-card">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2 class="table-header m-0">Pending Requests</h2>
+        </div>
+
+        @if (PendingOrdersList != null && PendingOrdersList.Any())
+        {
+            <QuickGrid Class="quickgrid-table" Items="PendingOrdersList.AsQueryable()">
+                <PropertyColumn Property="order => order.Id" Title="ID" Sortable="true" />
+                <PropertyColumn Property="order => order.Location" Title="Branch" Sortable="true" />
+                <PropertyColumn Property="order => order.Movement" Title="Type" Sortable="true" />
+
+                <TemplateColumn Title="Items">
+                    <ul class="list-unstyled m-0 small">
+                        @foreach (var detail in context.OrderDetails)
+                        {
+                            <li>
+                                <strong>@(detail.Item?.Name ?? "Unknown")</strong>: @detail.Quantity
+                            </li>
+                        }
+                    </ul>
+                </TemplateColumn>
+
+                <PropertyColumn Property="order => order.DateCreated" Title="Date" Format="MMM dd, HH:mm" Sortable="true" />
+                <PropertyColumn Property="order => order.CreatedBy" Title="Requested By" Sortable="true" />
+
+                <TemplateColumn Title="Actions">
+                    <button class="btn-approve" @onclick="() => ApproveOrder(context.Id)">Approve</button>
+                    <button class="btn-deny" @onclick="() => DenyOrder(context.Id)">Deny</button>
+                </TemplateColumn>
+            </QuickGrid>
+        }
+        else
+        {
+            <div class="text-center p-5 text-muted">
+                <span class="bi bi-check-circle" style="font-size: 2rem;"></span>
+                <p class="mt-2">No pending orders found.</p>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private FullSD_InventoryManagementContext? viewContext;
+    private List<Order> PendingOrdersList = new();
+    private string? currentAdminUser;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        // We still grab the email/name for the audit log (CreatedBy/UpdatedBy)
+        currentAdminUser = authState.User.Identity?.Name ?? "Admin";
+
+        await LoadPendingOrders();
+    }
+
+    private async Task LoadPendingOrders()
+    {
+        if (viewContext != null) await viewContext.DisposeAsync();
+        viewContext = DbFactory.CreateDbContext();
+
+        PendingOrdersList = await viewContext.Order
+            .Where(o => o.Status == OrderStatus.Pending)
+            .Include(o => o.OrderDetails)
+            .ThenInclude(od => od.Item)
+            .OrderBy(o => o.DateCreated)
+            .ToListAsync();
+    }
+
+    private async Task ApproveOrder(int orderId)
+    {
+        using var actionContext = DbFactory.CreateDbContext();
+
+        var order = await actionContext.Order
+            .Include(o => o.OrderDetails)
+            .FirstOrDefaultAsync(o => o.Id == orderId);
+
+        if (order != null)
+        {
+            order.Status = OrderStatus.Approved;
+            order.UpdatedBy = currentAdminUser;
+            order.DateUpdated = DateTime.Now;
+
+            foreach (var detail in order.OrderDetails)
+            {
+                var inventory = await actionContext.BranchInventory
+                    .FirstOrDefaultAsync(bi => bi.BranchID == order.BranchID && bi.ItemID == detail.ItemID);
+
+                if (inventory == null)
+                {
+                    inventory = new BranchInventory
+                    {
+                        BranchID = order.BranchID,
+                        ItemID = detail.ItemID,
+                        Quantity = 0,
+                        CreatedBy = currentAdminUser,
+                        UpdatedBy = currentAdminUser,
+                        DateCreated = DateTime.Now,
+                        DateUpdated = DateTime.Now
+                    };
+                    actionContext.BranchInventory.Add(inventory);
+                }
+
+                if (order.Movement == MovementType.In)
+                {
+                    inventory.Quantity += detail.Quantity;
+                }
+                else if (order.Movement == MovementType.Out)
+                {
+                    inventory.Quantity -= detail.Quantity;
+                }
+
+                inventory.DateUpdated = DateTime.Now;
+                inventory.UpdatedBy = currentAdminUser;
+            }
+
+            await actionContext.SaveChangesAsync();
+            await LoadPendingOrders();
+        }
+    }
+
+    private async Task DenyOrder(int orderId)
+    {
+        using var actionContext = DbFactory.CreateDbContext();
+
+        var order = await actionContext.Order.FindAsync(orderId);
+        if (order != null)
+        {
+            order.Status = OrderStatus.Denied;
+            order.UpdatedBy = currentAdminUser;
+            order.DateUpdated = DateTime.Now;
+
+            await actionContext.SaveChangesAsync();
+            await LoadPendingOrders();
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (viewContext != null) await viewContext.DisposeAsync();
+    }
+}

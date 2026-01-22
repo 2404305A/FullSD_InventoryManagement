@@ -6,6 +6,8 @@
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.AspNetCore.WebUtilities
 @using FullSD_InventoryManagement.Data
+@using FullSD_InventoryManagement.Domain
+@using Microsoft.EntityFrameworkCore
 
 @inject UserManager<FullSD_InventoryManagementUser> UserManager
 @inject IUserStore<FullSD_InventoryManagementUser> UserStore
@@ -15,6 +17,8 @@
 @inject NavigationManager NavigationManager
 @inject IdentityRedirectManager RedirectManager
 @inject RoleManager<IdentityRole> RoleManager
+@* Inject Database Factory to access Branches and save User details *@
+@inject IDbContextFactory<FullSD_InventoryManagementContext> DbFactory
 
 <PageTitle>Register</PageTitle>
 
@@ -68,7 +72,7 @@
         display: flex;
         justify-content: center;
         align-items: center;
-        min-height: calc(100vh - 80px); /* Subtracts header height */
+        min-height: calc(100vh - 80px);
         background-color: #f9f9f9;
         padding: 40px 20px;
     }
@@ -83,7 +87,6 @@
         border: 1px solid #e0e0e0;
     }
 
-    /* (Rest of the previous styles: .register-header, .custom-input, etc.) */
     .register-header {
         text-align: center;
         font-size: 2rem;
@@ -127,7 +130,6 @@
     }
 </style>
 
-
 <div class="register-container">
     <div class="register-card">
         <h2 class="register-header">Sign Up</h2>
@@ -147,6 +149,19 @@
                 </div>
             </div>
 
+            @* --- NEW BRANCH DROPDOWN --- *@
+            <div class="form-group">
+                <label class="form-label">Select Branch</label>
+                <InputSelect @bind-Value="Input.BranchId" class="custom-input">
+                    <option value="0">-- Select a Branch --</option>
+                    @foreach (var branch in Branches)
+                    {
+                        <option value="@branch.Id">@branch.Name</option>
+                    }
+                </InputSelect>
+                <ValidationMessage For="() => Input.BranchId" class="text-danger" />
+            </div>
+
             <div class="form-group">
                 <label class="form-label">Email Address</label>
                 <InputText @bind-Value="Input.Email" class="custom-input" placeholder="email@example.com" />
@@ -162,7 +177,7 @@
                 <InputText type="password" @bind-Value="Input.ConfirmPassword" class="custom-input" />
             </div>
 
-            <button type="submit" class="btn-log-in">Log in</button>
+            <button type="submit" class="btn-log-in">Sign Up</button>
 
             <p style="text-align: center; font-size: 0.8rem; color: #888; margin-top: 15px;">
                 Already have an account? Log in <a href="Account/Login" style="color: #888; text-decoration: underline;">here</a>
@@ -174,6 +189,9 @@
 @code {
     private IEnumerable<IdentityError>? identityErrors;
 
+    // List to hold branches for dropdown
+    private List<Branch> Branches = new();
+
     [SupplyParameterFromForm]
     private InputModel Input { get; set; } = new();
 
@@ -182,8 +200,22 @@
 
     private string? Message => identityErrors is null ? null : $"Error: {string.Join(", ", identityErrors.Select(error => error.Description))}";
 
+    // Load Branches on Initialization
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = DbFactory.CreateDbContext();
+        Branches = await context.Branch.ToListAsync();
+    }
+
     public async Task RegisterUser(EditContext editContext)
     {
+        // Validate Branch Selection
+        if (Input.BranchId == 0)
+        {
+            identityErrors = new[] { new IdentityError { Description = "Please select a valid branch." } };
+            return;
+        }
+
         var user = CreateUser();
 
         await UserStore.SetUserNameAsync(user, Input.Email, CancellationToken.None);
@@ -201,16 +233,29 @@
             return;
         }
 
-        //create the user role if it doesn't exist
+        // --- NEW LOGIC: Create Domain User (Link to Branch) ---
+        using var context = DbFactory.CreateDbContext();
+        var domainUser = new FullSD_InventoryManagement.Domain.User
+        {
+            Username = Input.Email,
+            EmailAddress = Input.Email,
+            BranchID = Input.BranchId,
+            CreatedBy = Input.Email,
+            UpdatedBy = Input.Email,
+            DateCreated = DateTime.Now,
+            DateUpdated = DateTime.Now
+        };
+        context.User.Add(domainUser);
+        await context.SaveChangesAsync();
+        // -----------------------------------------------------
+
         if (!await RoleManager.RoleExistsAsync("User"))
         {
             await RoleManager.CreateAsync(new IdentityRole("User"));
         }
-        //add the user to the user role
+
         await UserManager.AddToRoleAsync(user, "User");
-        //add the user id as claim when user registers
-        await UserManager.AddClaimAsync(user, new System.Security.Claims.Claim("userId",
-        user.Id));
+        await UserManager.AddClaimAsync(user, new System.Security.Claims.Claim("userId", user.Id));
 
         Logger.LogInformation("User created a new account with password.");
 
@@ -270,6 +315,11 @@
         [Required]
         [Display(Name = "Last Name")]
         public string LastName { get; set; } = "";
+
+        // NEW FIELD FOR BRANCH
+        [Required]
+        [Display(Name = "Branch")]
+        public int BranchId { get; set; }
 
         [Required]
         [StringLength(100, ErrorMessage = "The {0} must be at least {2} and at max {1} characters long.", MinimumLength = 6)]

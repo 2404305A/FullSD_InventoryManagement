@@ -82,6 +82,10 @@
     <div class="tab-container">
         <a href="/inventory" class="tab active">Inventory</a>
         <a href="/orders" class="tab">Order History</a>
+        @if (isAdmin)
+        {
+            <a href="/orders/pending" class="tab">Pending Approvals</a>
+        }
     </div>
 
     <div class="inventory-card">

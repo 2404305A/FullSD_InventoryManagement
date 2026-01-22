@@ -84,7 +84,24 @@
 
                     <div class="mb-3">
                         <label class="form-label"><strong>Branch:</strong></label>
-                        <input type="text" class="form-control" value="@branchName" disabled />
+
+                        @* --- LOGIC CHANGE: Dropdown for Admin, Locked for User --- *@
+                        @if (isAdmin)
+                        {
+                            <InputSelect @bind-Value="Order.BranchID" class="form-control">
+                                <option value="0">-- Select Branch --</option>
+                                @foreach (var branch in AllBranches)
+                                {
+                                    <option value="@branch.Id">@branch.Name</option>
+                                }
+                            </InputSelect>
+                        }
+                        else
+                        {
+                            <input type="text" class="form-control" value="@branchName" disabled />
+                            <small class="text-muted">Orders are assigned to your registered branch.</small>
+                        }
+                        <ValidationMessage For="() => Order.BranchID" class="text-danger" />
                     </div>
 
                     <div class="mb-3">
@@ -177,8 +194,11 @@
     private string? ErrorMessage;
 
     // UI State
+    private bool isAdmin = false;
     private string branchName = "Loading...";
+
     private List<Item> AvailableItems = new();
+    private List<Branch> AllBranches = new(); // List for Admin Dropdown
 
     // Inputs for the "Add Item" section
     private int selectedItemId;
@@ -188,23 +208,40 @@
     {
         using var context = DbFactory.CreateDbContext();
 
-        // 1. Load Items for the dropdown
+        // 1. Load Items
         AvailableItems = await context.Item.ToListAsync();
 
-        // 2. Get User & Branch Info
+        // 2. Identify User
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
         var userPrincipal = authState.User;
         var userName = userPrincipal.Identity?.Name ?? "System";
 
-        var domainUser = await context.User
-            .FirstOrDefaultAsync(u => u.EmailAddress == userName || u.Username == userName);
+        isAdmin = userPrincipal.IsInRole("Administrator");
 
-        if (domainUser != null)
+        if (isAdmin)
         {
-            Order.BranchID = domainUser.BranchID;
-            var branch = await context.Branch.FindAsync(domainUser.BranchID);
-            branchName = branch?.Name ?? "Unknown";
-            Order.Location = branchName;
+            // --- ADMIN LOGIC: Load All Branches ---
+            AllBranches = await context.Branch.ToListAsync();
+            // Order.BranchID remains 0 until selected in dropdown
+        }
+        else
+        {
+            // --- USER LOGIC: Lock to Assigned Branch ---
+            var domainUser = await context.User
+                .FirstOrDefaultAsync(u => u.EmailAddress == userName || u.Username == userName);
+
+            if (domainUser != null)
+            {
+                Order.BranchID = domainUser.BranchID;
+                var branch = await context.Branch.FindAsync(domainUser.BranchID);
+                branchName = branch?.Name ?? "Unknown";
+                Order.Location = branchName;
+            }
+            else
+            {
+                // Fallback for user without branch
+                branchName = "No Branch Assigned";
+            }
         }
 
         // 3. Set Audit Fields
@@ -219,18 +256,13 @@
         if (selectedItemId == 0) return;
         if (selectedQty <= 0) return;
 
-        // --- MERGE LOGIC ---
-        // Check if item already exists in the list
         var existing = Order.OrderDetails.FirstOrDefault(od => od.ItemID == selectedItemId);
-
         if (existing != null)
         {
-            // Update quantity of existing row
             existing.Quantity += selectedQty;
         }
         else
         {
-            // Create new row
             Order.OrderDetails.Add(new OrderDetail
             {
                 ItemID = selectedItemId,
@@ -242,14 +274,12 @@
             });
         }
 
-        // Reset inputs for next addition
         selectedItemId = 0;
         selectedQty = 1;
     }
 
     private void RemoveItem(OrderDetail detail)
     {
-        // --- REMOVE LOGIC ---
         Order.OrderDetails.Remove(detail);
     }
 
@@ -263,13 +293,28 @@
         using var context = DbFactory.CreateDbContext();
         ErrorMessage = null;
 
+        // 1. Validate Branch
+        if (Order.BranchID == 0)
+        {
+            ErrorMessage = "Please select a branch.";
+            return;
+        }
+
+        // 2. Set Location Name (For Admin selection or consistency)
+        if (string.IsNullOrEmpty(Order.Location))
+        {
+            var selectedBranch = await context.Branch.FindAsync(Order.BranchID);
+            Order.Location = selectedBranch?.Name ?? "Unknown";
+        }
+
+        // 3. Validate Items
         if (!Order.OrderDetails.Any())
         {
             ErrorMessage = "Please add at least one item to the order.";
             return;
         }
 
-        // --- VALIDATION LOGIC (Check Stock) ---
+        // 4. Validate Stock (If Outgoing)
         if (Order.Movement == MovementType.Out)
         {
             foreach (var detail in Order.OrderDetails)
@@ -295,11 +340,8 @@
             }
         }
 
-        // --- STATUS LOGIC ---
-        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
-        var user = authState.User;
-
-        if (user.IsInRole("Administrator"))
+        // 5. Set Status
+        if (isAdmin)
         {
             Order.Status = OrderStatus.Approved;
             await ProcessInventoryMovement(context, Order);

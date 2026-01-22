@@ -1,0 +1,41 @@
+﻿@page "/contact"
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 text-center">
+            <h1 class="display-5 mb-4">Contact Us!</h1>
+
+            <div class="card shadow-sm border-0 bg-light">
+                <div class="card-body py-5">
+                    <p class="h4 mb-2">Email: contact@goinventory.com</p>
+
+                    <p class="h5 text-muted">Mobile: 12345678</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row mt-5">
+        <div class="col-12 text-center">
+            <hr class="mb-4" />
+            <div class="d-flex justify-content-center gap-3">
+                <AuthorizeView>
+                    <Authorized>
+                        <a href="/inventory" class="btn btn-outline-secondary px-4">
+                            <span class="bi bi-arrow-left" aria-hidden="true"></span> Back to Inventory
+                        </a>
+                    </Authorized>
+                    <NotAuthorized>
+                        <a href="/" class="btn btn-outline-secondary px-4">
+                            <span class="bi bi-arrow-left" aria-hidden="true"></span> Back to Home
+                        </a>
+                    </NotAuthorized>
+                </AuthorizeView>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@code {
+
+}
