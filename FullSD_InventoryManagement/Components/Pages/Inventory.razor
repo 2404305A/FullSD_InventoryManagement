@@ -168,7 +168,6 @@
         isAdmin = userPrincipal.IsInRole("Administrator");
         var userName = userPrincipal.Identity?.Name;
 
-        // 1. Get First Name from Identity System (FullSD_InventoryManagementUser)
         var identityUser = await UserManager.GetUserAsync(userPrincipal);
         if (identityUser != null && !string.IsNullOrEmpty(identityUser.FirstName))
         {
@@ -181,7 +180,6 @@
 
         if (isAdmin)
         {
-            // Admin View Logic
             var data = await context.BranchInventory
                 .Include(bi => bi.Item)
                 .Include(bi => bi.Branch)
@@ -202,8 +200,6 @@
         }
         else
         {
-            // 2. Get BranchID from Domain System (Domain.User)
-            // Note: This variable 'domainUser' is distinct from 'identityUser' above
             var domainUser = await context.User
                 .FirstOrDefaultAsync(u => u.EmailAddress == userName || u.Username == userName);
 

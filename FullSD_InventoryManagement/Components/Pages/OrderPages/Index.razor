@@ -113,8 +113,9 @@
 
     @* Navigation Tabs *@
     <div class="tab-container">
-        <a href="/inventory" class="tab active">Inventory</a>
-        <a href="/orders" class="tab">Order History</a>
+        <a href="/inventory" class="tab">Inventory</a>
+        <a href="/orders" class="tab active">Order History</a>
+
         @if (isAdmin)
         {
             <a href="/orders/pending" class="tab">Pending Approvals</a>
@@ -199,20 +200,16 @@
     {
         context = DbFactory.CreateDbContext();
 
-        // 1. Identify User Role and Name
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
         var userPrincipal = authState.User;
         isAdmin = userPrincipal.IsInRole("Administrator");
         var userName = userPrincipal.Identity?.Name;
 
-        // Get Display Name (Cosmetic)
         var identityUser = await UserManager.GetUserAsync(userPrincipal);
         displayUserName = (!string.IsNullOrEmpty(identityUser?.FirstName)) ? identityUser.FirstName : userName;
 
-        // 2. Filter Data Based on Role
         if (isAdmin)
         {
-            // Admin sees ALL orders
             FilteredOrders = context.Order
                 .Include(o => o.OrderDetails)
                 .ThenInclude(od => od.Item)
@@ -220,7 +217,6 @@
         }
         else
         {
-            // User sees ONLY their Branch orders
             var domainUser = await context.User
                 .FirstOrDefaultAsync(u => u.EmailAddress == userName || u.Username == userName);
 
@@ -234,7 +230,6 @@
             }
             else
             {
-                // Fallback if user has no branch assigned (Empty List)
                 FilteredOrders = Enumerable.Empty<Order>().AsQueryable();
             }
         }
