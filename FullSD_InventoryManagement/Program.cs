@@ -41,6 +41,8 @@ builder.Services.AddIdentityCore<FullSD_InventoryManagementUser>(options => opti
 
 builder.Services.AddSingleton<IEmailSender<FullSD_InventoryManagementUser>, IdentityNoOpEmailSender>();
 
+builder.Services.AddHttpClient();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

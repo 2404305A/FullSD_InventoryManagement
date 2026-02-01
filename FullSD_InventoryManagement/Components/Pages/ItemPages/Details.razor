@@ -1,42 +1,75 @@
 ﻿@page "/items/details"
 @using Microsoft.EntityFrameworkCore
 @using FullSD_InventoryManagement.Domain
+@using FullSD_InventoryManagement.Data
 @inject IDbContextFactory<FullSD_InventoryManagement.Data.FullSD_InventoryManagementContext> DbFactory
 @inject NavigationManager NavigationManager
+@inject IHttpClientFactory ClientFactory
 
-<PageTitle>Details</PageTitle>
+<PageTitle>Item Details</PageTitle>
 
-<h1>Details</h1>
-
-<div>
-    <h2>Item</h2>
-    <hr />
+<div class="container mt-4">
     @if (item is null)
     {
         <p><em>Loading...</em></p>
     }
-    else {
-        <dl class="row">
-            <dt class="col-sm-2">Name</dt>
-            <dd class="col-sm-10">@item.Name</dd>
-            <dt class="col-sm-2">DateCreated</dt>
-            <dd class="col-sm-10">@item.DateCreated</dd>
-            <dt class="col-sm-2">DateUpdated</dt>
-            <dd class="col-sm-10">@item.DateUpdated</dd>
-            <dt class="col-sm-2">CreatedBy</dt>
-            <dd class="col-sm-10">@item.CreatedBy</dd>
-            <dt class="col-sm-2">UpdatedBy</dt>
-            <dd class="col-sm-10">@item.UpdatedBy</dd>
-        </dl>
-        <div>
-            <a href="@($"/items/edit?id={item.Id}")">Edit</a> |
-            <a href="@($"/items")">Back to List</a>
+    else
+    {
+        <div class="card shadow-sm">
+            <div class="card-header bg-black text-white d-flex justify-content-between align-items-center">
+                <h3 class="mb-0">@item.Name</h3>
+                <span class="badge bg-light text-dark">ID: @item.Id</span>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    @* Left Column: Item Details *@
+                    <div class="col-md-8">
+                        <dl class="row">
+                            <dt class="col-sm-4">Item Name</dt>
+                            <dd class="col-sm-8">@item.Name</dd>
+
+                            <dt class="col-sm-4">Created By</dt>
+                            <dd class="col-sm-8">@item.CreatedBy</dd>
+
+                            <dt class="col-sm-4">Date Created</dt>
+                            <dd class="col-sm-8">@item.DateCreated.ToString("g")</dd>
+
+                            <dt class="col-sm-4">Last Updated</dt>
+                            <dd class="col-sm-8">@item.DateUpdated.ToString("g")</dd>
+                        </dl>
+                    </div>
+
+                    @* Right Column: QR Code from REST API *@
+                    <div class="col-md-4 text-center border-start">
+                        <h5>Item QR Code</h5>
+                        <p class="text-muted small">Scan to manage inventory</p>
+
+                        @if (!string.IsNullOrEmpty(qrCodeImage))
+                        {
+                            <img src="@qrCodeImage" alt="QR Code" class="img-fluid border p-2" style="max-width: 150px;" />
+                        }
+                        else
+                        {
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading QR...</span>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer">
+                <a href="@($"/items/edit?id={item.Id}")" class="btn btn-dark">Edit</a>
+
+                @* --- UPDATED LINK HERE: Points to Inventory --- *@
+                <a href="/inventory" class="btn btn-outline-secondary ms-2">Back to List</a>
+            </div>
         </div>
     }
 </div>
 
 @code {
     private Item? item;
+    private string? qrCodeImage;
 
     [SupplyParameterFromQuery]
     private int Id { get; set; }
@@ -49,6 +82,30 @@
         if (item is null)
         {
             NavigationManager.NavigateTo("notfound");
+        }
+        else
+        {
+            // --- REST API CONSUMPTION ---
+            string dataToEncode = $"InventoryItem-{item.Id}-{item.Name}";
+            string apiUrl = $"https://api.qrserver.com/v1/create-qr-code/?size=150x150&data={Uri.EscapeDataString(dataToEncode)}";
+
+            var client = ClientFactory.CreateClient();
+
+            try
+            {
+                var response = await client.GetAsync(apiUrl);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    var imageBytes = await response.Content.ReadAsByteArrayAsync();
+                    var base64String = Convert.ToBase64String(imageBytes);
+                    qrCodeImage = $"data:image/png;base64,{base64String}";
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error fetching QR code: {ex.Message}");
+            }
         }
     }
 }

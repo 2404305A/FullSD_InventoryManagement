@@ -74,6 +74,19 @@
         border-radius: 0.25rem;
         font-size: 0.85em;
     }
+
+    /* --- NEW STYLE FOR ITEM LINKS --- */
+    .item-link {
+        color: black;
+        text-decoration: none;
+        font-weight: 600;
+        transition: color 0.2s;
+    }
+
+        .item-link:hover {
+            text-decoration: underline;
+            color: #0d6efd; /* Bootstrap Blue */
+        }
 </style>
 
 <div class="dashboard-container">
@@ -108,7 +121,12 @@
                     @foreach (var item in MasterInventory)
                     {
                         <tr>
-                            <td>@item.Name</td>
+                            <td>
+                                @* --- UPDATE 1: Link to Item Details --- *@
+                                <a href="@($"items/details?id={item.ItemId}")" class="item-link">
+                                    @item.Name <span class="bi bi-qr-code small text-muted ms-1"></span>
+                                </a>
+                            </td>
                             <td><strong>@item.TotalQuantity</strong></td>
                             <td>
                                 <ul class="list-unstyled mb-0" style="padding-left: 0;">
@@ -140,7 +158,12 @@
                     @foreach (var stock in LocalInventory)
                     {
                         <tr>
-                            <td>@stock.ItemName</td>
+                            <td>
+                                @* --- UPDATE 2: Link to Item Details --- *@
+                                <a href="@($"items/details?id={stock.ItemId}")" class="item-link">
+                                    @stock.ItemName <span class="bi bi-qr-code small text-muted ms-1"></span>
+                                </a>
+                            </td>
                             <td>@stock.Quantity</td>
                         </tr>
                     }
@@ -189,6 +212,8 @@
                 .GroupBy(x => x.Item)
                 .Select(g => new MasterInventoryViewModel
                 {
+                    // --- UPDATE 3: Capture the ID ---
+                    ItemId = g.Key?.Id ?? 0,
                     Name = g.Key?.Name ?? "Unknown",
                     TotalQuantity = g.Sum(x => x.Quantity),
                     BranchBreakdown = g.Select(b => new BranchStockModel
@@ -215,6 +240,8 @@
 
                 LocalInventory = data.Select(bi => new LocalInventoryViewModel
                 {
+                    // --- UPDATE 4: Capture the ID ---
+                    ItemId = bi.ItemID,
                     ItemName = bi.Item?.Name ?? "Unknown",
                     Quantity = bi.Quantity
                 }).ToList();
@@ -226,6 +253,7 @@
 
     public class MasterInventoryViewModel
     {
+        public int ItemId { get; set; } // <--- Added
         public string Name { get; set; } = "";
         public int TotalQuantity { get; set; }
         public List<BranchStockModel> BranchBreakdown { get; set; } = new();
@@ -239,6 +267,7 @@
 
     public class LocalInventoryViewModel
     {
+        public int ItemId { get; set; } // <--- Added
         public string ItemName { get; set; } = "";
         public int Quantity { get; set; }
     }
