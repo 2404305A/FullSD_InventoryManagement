@@ -63,6 +63,14 @@
         margin-bottom: 20px;
         border: 1px solid #e9ecef;
     }
+
+    .action-link {
+        font-size: 0.8rem;
+        cursor: pointer;
+        text-decoration: underline;
+        color: blue;
+        margin-left: 5px;
+    }
 </style>
 
 <div class="dashboard-container">
@@ -79,15 +87,15 @@
             <ValidationSummary class="text-danger" />
 
             <div class="row">
+                @* --- LEFT COLUMN: Order Info --- *@
                 <div class="col-md-5">
                     <h3 class="section-title">Order Information</h3>
 
                     <div class="mb-3">
                         <label class="form-label"><strong>Branch:</strong></label>
-
-                        @* --- LOGIC CHANGE: Dropdown for Admin, Locked for User --- *@
                         @if (isAdmin)
                         {
+                            @* Admin can select any branch *@
                             <InputSelect @bind-Value="Order.BranchID" class="form-control">
                                 <option value="0">-- Select Branch --</option>
                                 @foreach (var branch in AllBranches)
@@ -98,6 +106,7 @@
                         }
                         else
                         {
+                            @* User is locked to their assigned branch *@
                             <input type="text" class="form-control" value="@branchName" disabled />
                             <small class="text-muted">Orders are assigned to your registered branch.</small>
                         }
@@ -115,31 +124,51 @@
                     </div>
                 </div>
 
+                @* --- RIGHT COLUMN: Add Items --- *@
                 <div class="col-md-7">
                     <h3 class="section-title">Order Items</h3>
 
                     <div class="add-item-box">
                         <div class="row g-2 align-items-end">
                             <div class="col-md-6">
-                                <label class="form-label">Select Item</label>
-                                <select class="form-control" @bind="selectedItemId">
-                                    <option value="0">-- Choose Item --</option>
-                                    @foreach (var item in AvailableItems)
-                                    {
-                                        <option value="@item.Id">@item.Name</option>
-                                    }
-                                </select>
+
+                                @* --- TOGGLE: Select Existing OR Create New --- *@
+                                @if (isCreatingNewItem)
+                                {
+                                    <label class="form-label">New Item Name</label>
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" @bind="newItemName" placeholder="Enter name..." />
+                                        <button type="button" class="btn btn-success" @onclick="SaveNewItem">Save</button>
+                                        <button type="button" class="btn btn-outline-secondary" @onclick="() => isCreatingNewItem = false">X</button>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="d-flex justify-content-between">
+                                        <label class="form-label">Select Item</label>
+                                        <span class="action-link" @onclick="() => isCreatingNewItem = true">+ New Item</span>
+                                    </div>
+                                    <select class="form-control" @bind="selectedItemId">
+                                        <option value="0">-- Choose Item --</option>
+                                        @foreach (var item in AvailableItems)
+                                        {
+                                            <option value="@item.Id">@item.Name</option>
+                                        }
+                                    </select>
+                                }
+
                             </div>
                             <div class="col-md-3">
                                 <label class="form-label">Qty</label>
                                 <input type="number" class="form-control" @bind="selectedQty" min="1" />
                             </div>
                             <div class="col-md-3">
-                                <button type="button" class="btn btn-secondary w-100" @onclick="AddItemToOrder">Add</button>
+                                <button type="button" class="btn btn-secondary w-100" @onclick="AddItemToOrder" disabled="@isCreatingNewItem">Add</button>
                             </div>
                         </div>
                     </div>
 
+                    @* --- ITEMS TABLE --- *@
                     @if (Order.OrderDetails.Any())
                     {
                         <table class="table table-bordered table-hover">
@@ -196,13 +225,16 @@
     // UI State
     private bool isAdmin = false;
     private string branchName = "Loading...";
-
     private List<Item> AvailableItems = new();
-    private List<Branch> AllBranches = new(); // List for Admin Dropdown
+    private List<Branch> AllBranches = new();
 
-    // Inputs for the "Add Item" section
+    // Inputs for Add Item
     private int selectedItemId;
     private int selectedQty = 1;
+
+    // --- MISSING VARIABLES FIXED HERE ---
+    private bool isCreatingNewItem = false;
+    private string newItemName = "";
 
     protected override async Task OnInitializedAsync()
     {
@@ -220,13 +252,10 @@
 
         if (isAdmin)
         {
-            // --- ADMIN LOGIC: Load All Branches ---
             AllBranches = await context.Branch.ToListAsync();
-            // Order.BranchID remains 0 until selected in dropdown
         }
         else
         {
-            // --- USER LOGIC: Lock to Assigned Branch ---
             var domainUser = await context.User
                 .FirstOrDefaultAsync(u => u.EmailAddress == userName || u.Username == userName);
 
@@ -239,7 +268,6 @@
             }
             else
             {
-                // Fallback for user without branch
                 branchName = "No Branch Assigned";
             }
         }
@@ -249,6 +277,44 @@
         Order.UpdatedBy = userName;
         Order.DateCreated = DateTime.Now;
         Order.DateUpdated = DateTime.Now;
+    }
+
+    // --- FUNCTION TO SAVE NEW ITEM ---
+    private async Task SaveNewItem()
+    {
+        if (string.IsNullOrWhiteSpace(newItemName)) return;
+
+        using var context = DbFactory.CreateDbContext();
+
+        // Check duplicates
+        bool exists = await context.Item.AnyAsync(i => i.Name.ToLower() == newItemName.ToLower());
+        if (exists)
+        {
+            var existingItem = await context.Item.FirstAsync(i => i.Name.ToLower() == newItemName.ToLower());
+            selectedItemId = existingItem.Id;
+        }
+        else
+        {
+            var newItem = new Item
+            {
+                Name = newItemName,
+                CreatedBy = Order.CreatedBy,
+                UpdatedBy = Order.UpdatedBy,
+                DateCreated = DateTime.Now,
+                DateUpdated = DateTime.Now
+            };
+
+            context.Item.Add(newItem);
+            await context.SaveChangesAsync();
+
+            // Refresh list and select new item
+            AvailableItems = await context.Item.ToListAsync();
+            selectedItemId = newItem.Id;
+        }
+
+        // Reset UI
+        newItemName = "";
+        isCreatingNewItem = false;
     }
 
     private void AddItemToOrder()
@@ -293,28 +359,24 @@
         using var context = DbFactory.CreateDbContext();
         ErrorMessage = null;
 
-        // 1. Validate Branch
         if (Order.BranchID == 0)
         {
             ErrorMessage = "Please select a branch.";
             return;
         }
 
-        // 2. Set Location Name (For Admin selection or consistency)
         if (string.IsNullOrEmpty(Order.Location))
         {
             var selectedBranch = await context.Branch.FindAsync(Order.BranchID);
             Order.Location = selectedBranch?.Name ?? "Unknown";
         }
 
-        // 3. Validate Items
         if (!Order.OrderDetails.Any())
         {
             ErrorMessage = "Please add at least one item to the order.";
             return;
         }
 
-        // 4. Validate Stock (If Outgoing)
         if (Order.Movement == MovementType.Out)
         {
             foreach (var detail in Order.OrderDetails)
@@ -340,7 +402,6 @@
             }
         }
 
-        // 5. Set Status
         if (isAdmin)
         {
             Order.Status = OrderStatus.Approved;
