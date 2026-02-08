@@ -233,7 +233,6 @@
             return;
         }
 
-        // --- NEW LOGIC: Create Domain User (Link to Branch) ---
         using var context = DbFactory.CreateDbContext();
         var domainUser = new FullSD_InventoryManagement.Domain.User
         {
@@ -316,7 +315,6 @@
         [Display(Name = "Last Name")]
         public string LastName { get; set; } = "";
 
-        // NEW FIELD FOR BRANCH
         [Required]
         [Display(Name = "Branch")]
         public int BranchId { get; set; }

@@ -85,7 +85,6 @@
         }
         else
         {
-            // --- REST API CONSUMPTION ---
             string dataToEncode = $"InventoryItem-{item.Id}-{item.Name}";
             string apiUrl = $"https://api.qrserver.com/v1/create-qr-code/?size=150x150&data={Uri.EscapeDataString(dataToEncode)}";
 
